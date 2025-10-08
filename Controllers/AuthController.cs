@@ -29,7 +29,12 @@ namespace FormBuilderAPI.Controllers
             if (authResult == null)
                 return Unauthorized(new { message = "Invalid username or password." });
 
-            return Ok(authResult);
+            // ✅ Success message for login
+            return Ok(new
+            {
+                message = "Login successful.",
+                data = authResult
+            });
         }
 
         [HttpPost("register")]
@@ -39,19 +44,42 @@ namespace FormBuilderAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Prevent anonymous creation of Admin accounts
+            // Prevent Admin registration via API
             if (!string.IsNullOrWhiteSpace(registerDto.Role) &&
-                registerDto.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
-                !User.IsInRole("Admin"))
+                registerDto.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             {
-                return Forbid();
+                return BadRequest(new
+                {
+                    message = "Admin accounts cannot be registered via API. Please contact the system administrator."
+                });
             }
 
+            // 🔍 Check if username already exists
+            var existingUser = await _authBL.GetUserByUsernameAsync(registerDto.Username);
+            if (existingUser != null)
+            {
+                return Conflict(new
+                {
+                    message = "User already exists. Please log in instead."
+                });
+            }
+
+            // ✅ Register new learner
             var created = await _authBL.RegisterAsync(registerDto);
             if (created == null)
-                return BadRequest(new { message = "Registration failed (user may already exist)." });
+            {
+                return BadRequest(new
+                {
+                    message = "Registration failed. Please try again later."
+                });
+            }
 
-            return CreatedAtAction(nameof(Login), new { id = created.UserId }, created);
+            // ✅ Success message for registration
+            return CreatedAtAction(nameof(Login), new { id = created.UserId }, new
+            {
+                message = "Registration successful. You can now log in.",
+                data = created
+            });
         }
     }
 }

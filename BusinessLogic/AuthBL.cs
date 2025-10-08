@@ -82,5 +82,13 @@ namespace FormBuilderAPI.BusinessLogicLayer
         {
             return await Task.FromResult(true);
         }
+
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            return await _sqlContext.Users
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+        }
+
+
     }
 }

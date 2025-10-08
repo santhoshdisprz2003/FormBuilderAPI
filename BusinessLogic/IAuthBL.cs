@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using FormBuilderAPI.DTOs;
+using FormBuilderAPI.Model.SQLModel;
 
 namespace FormBuilderAPI.BusinessLogicLayer
 {
@@ -8,5 +9,8 @@ namespace FormBuilderAPI.BusinessLogicLayer
         Task<AuthResponseDTO?> LoginAsync(AuthDTO dto);
         Task<AuthResponseDTO?> RegisterAsync(AuthDTO dto);
         Task<bool> ValidateTokenAsync(string token);
+        Task<User?> GetUserByUsernameAsync(string username);
+        
+
     }
 }

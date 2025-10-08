@@ -13,23 +13,20 @@ namespace FormBuilderAPI.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IFormBL _formBL;
+        private readonly IResponseBL _responseBL;
 
-        public AdminController(IFormBL formBL)
+        public AdminController(IFormBL formBL, IResponseBL responseBL)
         {
             _formBL = formBL ?? throw new ArgumentNullException(nameof(formBL));
+            _responseBL = responseBL ?? throw new ArgumentNullException(nameof(responseBL));
         }
 
-        /// <summary>
-        /// Get a specific form by ID (Admin only).
-        /// </summary>
-        [HttpGet("forms/{id:length(24)}")]
-        public async Task<IActionResult> GetFormById(string id)
+       
+        [HttpGet("forms/{formId:length(24)}/responses")]
+        public async Task<IActionResult> GetResponsesForForm(string formId)
         {
-            var form = await _formBL.GetFormByIdAsync(id);
-            if (form == null)
-                return NotFound(new { message = "Form not found." });
-
-            return Ok(form);
+            var responses = await _responseBL.GetResponsesForFormAsync(formId);
+            return Ok(responses);
         }
     }
 }

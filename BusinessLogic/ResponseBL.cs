@@ -18,7 +18,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext = sqlContext;
         }
 
-        // Learner submits a form response
+    
         public async Task<Guid> SubmitResponseAsync(ResponseDTO dto)
         {
             var response = new FormResponse
@@ -39,7 +39,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
             return response.ResponseId;
         }
 
-        // Admin: get all responses for a specific form
+       
         public async Task<List<ResponseDetailDTO>> GetResponsesForFormAsync(string formId)
         {
             var responses = await _sqlContext.FormResponses
@@ -47,44 +47,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 .Where(r => r.FormId == formId)
                 .ToListAsync();
 
-            return responses.Select(MapToDetailDTO).ToList();
-        }
-
-        // Admin: get a specific response by Guid
-        public async Task<ResponseDetailDTO?> GetResponseByIdAsync(Guid id)
-        {
-            var response = await _sqlContext.FormResponses
-                .Include(r => r.Answers)
-                .FirstOrDefaultAsync(r => r.ResponseId == id);
-
-            return response == null ? null : MapToDetailDTO(response);
-        }
-
-        // Admin: get all responses (any form)
-        public async Task<List<ResponseDetailDTO>> GetAllResponsesAsync()
-        {
-            var responses = await _sqlContext.FormResponses
-                .Include(r => r.Answers)
-                .ToListAsync();
-
-            return responses.Select(MapToDetailDTO).ToList();
-        }
-
-        // Admin: delete a response
-        public async Task<bool> DeleteResponseAsync(Guid id)
-        {
-            var response = await _sqlContext.FormResponses.FindAsync(id);
-            if (response == null)
-                return false;
-
-            _sqlContext.FormResponses.Remove(response);
-            await _sqlContext.SaveChangesAsync();
-            return true;
-        }
-
-        // 🔧 Private mapper helper
-        private static ResponseDetailDTO MapToDetailDTO(FormResponse r) =>
-            new ResponseDetailDTO
+            return responses.Select(r => new ResponseDetailDTO
             {
                 ResponseId = r.ResponseId,
                 FormId = r.FormId,
@@ -96,6 +59,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
                     QuestionId = a.QuestionId,
                     AnswerText = a.AnswerText
                 }).ToList()
-            };
+            }).ToList();
+        }
     }
 }

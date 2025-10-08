@@ -11,16 +11,15 @@ namespace FormBuilderAPI.Model.SQLModel
         public Guid AnswerId { get; set; }
 
         [Required]
-        public Guid FormResponseId { get; set; } // FK to FormResponse
+        public Guid ResponseId { get; set; } // ✅ renamed from FormResponseId
 
         [Required]
-        public string QuestionId { get; set; } = string.Empty; // Mongo FormField.Id
+        public string QuestionId { get; set; } = string.Empty;
 
-        [Required]
         [MaxLength(2000)]
-        public string AnswerText { get; set; } = string.Empty;
+        public string? AnswerText { get; set; }
 
-        [ForeignKey(nameof(FormResponseId))]
+        [ForeignKey(nameof(ResponseId))]
         public FormResponse FormResponse { get; set; } = null!;
     }
 }

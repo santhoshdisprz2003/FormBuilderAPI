@@ -4,16 +4,20 @@ using FormBuilderAPI.Model.MongoModel;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
+using FormBuilderAPI.Model.SQLModel; // ✅ Add this line for EF models
+using Microsoft.EntityFrameworkCore; 
+using System.Linq;
 namespace FormBuilderAPI.BusinessLogicLayer
 {
     public class FormBL : IFormBL
     {
         private readonly IMongoCollection<Form> _forms;
+        private readonly SQLDbContext _sqlContext;
 
-        public FormBL(MongoDbContext mongoContext)
+        public FormBL(MongoDbContext mongoContext,SQLDbContext sqlContext)
         {
             _forms = mongoContext.Forms;
+            _sqlContext = sqlContext;
         }
 
         /// <summary>
@@ -86,9 +90,32 @@ namespace FormBuilderAPI.BusinessLogicLayer
         /// Delete a form by Id (Admin only)
         /// </summary>
         public async Task<bool> DeleteFormAsync(string id)
-        {
-            var result = await _forms.DeleteOneAsync(f => f.Id == id);
-            return result.DeletedCount > 0;
-        }
+{
+    // 1️⃣ Delete all responses for this form from SQL
+    var responses = await _sqlContext.FormResponses
+        .Where(r => r.FormId == id)
+        .Include(r => r.Answers)
+        .ToListAsync();
+
+    if (responses.Any())
+    {
+        // Delete all answers first
+        var allAnswers = responses.SelectMany(r => r.Answers).ToList();
+        if (allAnswers.Any())
+            _sqlContext.FormResponseAnswers.RemoveRange(allAnswers);
+
+        // Then delete all responses
+        _sqlContext.FormResponses.RemoveRange(responses);
+
+        await _sqlContext.SaveChangesAsync();
+    }
+
+    // 2️⃣ Delete the form from MongoDB
+    var result = await _forms.DeleteOneAsync(f => f.Id == id);
+
+    // 3️⃣ Return whether form deletion was successful
+    return result.DeletedCount > 0;
+}
+
     }
 }

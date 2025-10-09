@@ -12,7 +12,6 @@ namespace FormBuilderAPI.DTOs
         [Required]
         public string FormId { get; set; } = string.Empty; // Mongo ObjectId string
 
-        [Required]
         public string SubmittedBy { get; set; } = string.Empty;
 
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;

@@ -18,7 +18,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext = sqlContext;
         }
 
-    
+
         public async Task<Guid> SubmitResponseAsync(ResponseDTO dto)
         {
             var response = new FormResponse
@@ -39,7 +39,6 @@ namespace FormBuilderAPI.BusinessLogicLayer
             return response.ResponseId;
         }
 
-       
         public async Task<List<ResponseDetailDTO>> GetResponsesForFormAsync(string formId)
         {
             var responses = await _sqlContext.FormResponses
@@ -61,5 +60,31 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 }).ToList()
             }).ToList();
         }
+
+        public async Task<List<ResponseDetailDTO>> GetResponsesForUserAsync(string formId, string userId)
+        {
+            var responses = await _sqlContext.FormResponses
+                .Include(r => r.Answers)
+                .Where(r => r.FormId == formId && r.SubmittedBy == userId)
+                .ToListAsync();
+
+            if (responses == null || responses.Count == 0)
+                return new List<ResponseDetailDTO>(); // return empty list instead of null
+
+            return responses.Select(r => new ResponseDetailDTO
+            {
+                ResponseId = r.ResponseId,
+                FormId = r.FormId,
+                SubmittedBy = r.SubmittedBy,
+                SubmittedAt = r.SubmittedAt,
+                Answers = r.Answers.Select(a => new ResponseAnswerDTO
+                {
+                    AnswerId = a.AnswerId,
+                    QuestionId = a.QuestionId,
+                    AnswerText = a.AnswerText
+                }).ToList()
+            }).ToList();
+        }
+
     }
 }

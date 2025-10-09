@@ -19,9 +19,8 @@ namespace FormBuilderAPI.Controllers
             _formBL = formBL ?? throw new ArgumentNullException(nameof(formBL));
         }
 
-        /// <summary>
+       
         /// Get all forms (accessible to both Admin and Learner).
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAllForms()
         {
@@ -29,9 +28,9 @@ namespace FormBuilderAPI.Controllers
             return Ok(forms);
         }
 
-        /// <summary>
+       
         /// Get a specific form by ID (accessible to both Admin and Learner).
-        /// </summary>
+        
         [HttpGet("{id:length(24)}")]
         public async Task<IActionResult> GetFormById(string id)
         {
@@ -42,9 +41,8 @@ namespace FormBuilderAPI.Controllers
             return Ok(form);
         }
 
-        /// <summary>
-        /// Create a new form (Admin only).
-        /// </summary>
+        // Create a new form (Admin only).
+        
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateForm([FromBody] FormDTO formDto)
@@ -56,9 +54,9 @@ namespace FormBuilderAPI.Controllers
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });
         }
 
-        /// <summary>
+     
         /// Update an existing form (Admin only).
-        /// </summary>
+       
         [HttpPut("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateForm(string id, [FromBody] FormDTO formDto)
@@ -73,9 +71,8 @@ namespace FormBuilderAPI.Controllers
             return NoContent();
         }
 
-        /// <summary>
-        /// Delete a form by ID (Admin only).
-        /// </summary>
+        // Delete a form by ID (Admin only).
+        
         [HttpDelete("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteForm(string id)

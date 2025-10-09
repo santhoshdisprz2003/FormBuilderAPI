@@ -7,8 +7,11 @@ namespace FormBuilderAPI.BusinessLogicLayer
 {
     public interface IResponseBL
     {
-    
+
         Task<Guid> SubmitResponseAsync(ResponseDTO dto);
+        Task<List<ResponseDetailDTO>> GetResponsesForUserAsync(string formId, string userId);
         Task<List<ResponseDetailDTO>> GetResponsesForFormAsync(string formId);
+     
+
     }
 }

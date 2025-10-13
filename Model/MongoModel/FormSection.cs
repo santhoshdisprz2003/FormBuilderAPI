@@ -27,7 +27,7 @@ namespace FormBuilderAPI.Model.MongoModel
         public string Label { get; set; } = string.Empty;
 
         [BsonElement("type")]
-        public string Type { get; set; } = string.Empty; // text, email, number, date, radio, etc.
+        public string Type { get; set; } = string.Empty;
 
         [BsonElement("required")]
         public bool Required { get; set; }

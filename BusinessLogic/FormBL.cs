@@ -2,11 +2,13 @@ using FormBuilderAPI.DataAccessLayer;
 using FormBuilderAPI.DTOs;
 using FormBuilderAPI.Model.MongoModel;
 using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using FormBuilderAPI.Model.SQLModel; 
-using Microsoft.EntityFrameworkCore; 
 using System.Linq;
+using System.Threading.Tasks;
+using FormBuilderAPI.Model.SQLModel;
+using Microsoft.EntityFrameworkCore;
+
 namespace FormBuilderAPI.BusinessLogicLayer
 {
     public class FormBL : IFormBL
@@ -14,37 +16,48 @@ namespace FormBuilderAPI.BusinessLogicLayer
         private readonly IMongoCollection<Form> _forms;
         private readonly SQLDbContext _sqlContext;
 
-        public FormBL(MongoDbContext mongoContext,SQLDbContext sqlContext)
+        public FormBL(MongoDbContext mongoContext, SQLDbContext sqlContext)
         {
             _forms = mongoContext.Forms;
             _sqlContext = sqlContext;
         }
 
-        /// <summary>
-        /// Get all forms (Admin & Learner)
-        /// </summary>
-        public async Task<IEnumerable<Form>> GetAllFormsAsync()
+        public async Task<IEnumerable<Form>> GetAllFormsAsync(string userRole)
         {
-            return await _forms.Find(_ => true).ToListAsync();
+            if (userRole == "Admin")
+            {
+                // Admin sees everything
+                return await _forms.Find(_ => true).ToListAsync();
+            }
+            else
+            {
+                // Learners see only Published forms
+                return await _forms.Find(f => f.Status == FormStatus.Published).ToListAsync();
+            }
         }
 
-        /// <summary>
-        /// Get specific form by Id (Admin & Learner)
-        /// </summary>
-        public async Task<Form?> GetFormByIdAsync(string id)
+        public async Task<Form?> GetFormByIdAsync(string id, string userRole)
         {
-            return await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
+            var filter = Builders<Form>.Filter.Eq(f => f.Id, id);
+
+            if (userRole != "Admin")
+            {
+                // Learners can access only published forms
+                var statusFilter = Builders<Form>.Filter.Eq(f => f.Status, FormStatus.Published);
+                filter = Builders<Form>.Filter.And(filter, statusFilter);
+            }
+
+            return await _forms.Find(filter).FirstOrDefaultAsync();
         }
 
-        /// <summary>
-        /// Create a new form (Admin only)
-        /// </summary>
         public async Task<string> CreateFormAsync(FormDTO dto)
         {
             var form = new Form
             {
                 Title = dto.Title,
                 Description = dto.Description,
+                Status = FormStatus.Draft,       // Force Draft
+                CreatedAt = DateTime.UtcNow,
                 Sections = dto.Sections?.ConvertAll(s => new FormSection
                 {
                     Title = s.Title,
@@ -59,14 +72,18 @@ namespace FormBuilderAPI.BusinessLogicLayer
             };
 
             await _forms.InsertOneAsync(form);
-            return form.Id; // Return newly created form ID
+            return form.Id;
         }
 
-        /// <summary>
-        /// Update existing form (Admin only)
-        /// </summary>
         public async Task<bool> UpdateFormAsync(string id, FormDTO dto)
         {
+            var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
+            if (existing == null)
+                return false;
+
+            if (existing.Status == FormStatus.Published)
+                return false;  // Cannot update published forms
+
             var update = Builders<Form>.Update
                 .Set(f => f.Title, dto.Title)
                 .Set(f => f.Description, dto.Description)
@@ -80,42 +97,53 @@ namespace FormBuilderAPI.BusinessLogicLayer
                         Required = f.Required,
                         Options = f.Options ?? new List<string>()
                     }) ?? new List<FormField>()
-                }) ?? new List<FormSection>());
+                }) ?? new List<FormSection>())
+                .Set(f => f.UpdatedAt, DateTime.UtcNow);
 
             var result = await _forms.UpdateOneAsync(f => f.Id == id, update);
             return result.ModifiedCount > 0;
         }
 
-        /// <summary>
-        /// Delete a form by Id (Admin only)
-        /// </summary>
+        public async Task<Form> PublishFormAsync(string id)
+        {
+            var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
+            if (existing == null)
+                throw new Exception("Form not found.");
+
+            if (existing.Status == FormStatus.Published)
+                throw new InvalidOperationException("Form is already published.");
+
+            var update = Builders<Form>.Update
+                .Set(f => f.Status, FormStatus.Published)
+                .Set(f => f.PublishedAt, DateTime.UtcNow);
+
+            await _forms.UpdateOneAsync(f => f.Id == id, update);
+
+            // Return the updated form
+            return await _forms.Find(f => f.Id == id).FirstOrDefaultAsync()!;
+        }
+
         public async Task<bool> DeleteFormAsync(string id)
-{
-    // 1️⃣ Delete all responses for this form from SQL
-    var responses = await _sqlContext.FormResponses
-        .Where(r => r.FormId == id)
-        .Include(r => r.Answers)
-        .ToListAsync();
+        {
+            // Delete all responses from SQL first
+            var responses = await _sqlContext.FormResponses
+                .Where(r => r.FormId == id)
+                .Include(r => r.Answers)
+                .ToListAsync();
 
-    if (responses.Any())
-    {
-        // Delete all answers first
-        var allAnswers = responses.SelectMany(r => r.Answers).ToList();
-        if (allAnswers.Any())
-            _sqlContext.FormResponseAnswers.RemoveRange(allAnswers);
+            if (responses.Any())
+            {
+                var allAnswers = responses.SelectMany(r => r.Answers).ToList();
+                if (allAnswers.Any())
+                    _sqlContext.FormResponseAnswers.RemoveRange(allAnswers);
 
-        // Then delete all responses
-        _sqlContext.FormResponses.RemoveRange(responses);
+                _sqlContext.FormResponses.RemoveRange(responses);
+                await _sqlContext.SaveChangesAsync();
+            }
 
-        await _sqlContext.SaveChangesAsync();
-    }
-
-    // 2️⃣ Delete the form from MongoDB
-    var result = await _forms.DeleteOneAsync(f => f.Id == id);
-
-    // 3️⃣ Return whether form deletion was successful
-    return result.DeletedCount > 0;
-}
-
+            // Delete form from MongoDB
+            var result = await _forms.DeleteOneAsync(f => f.Id == id);
+            return result.DeletedCount > 0;
+        }
     }
 }

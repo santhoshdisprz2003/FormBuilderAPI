@@ -19,30 +19,26 @@ namespace FormBuilderAPI.Controllers
             _formBL = formBL ?? throw new ArgumentNullException(nameof(formBL));
         }
 
-       
-        /// Get all forms (accessible to both Admin and Learner).
         [HttpGet]
         public async Task<IActionResult> GetAllForms()
         {
-            var forms = await _formBL.GetAllFormsAsync();
+            var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
+            var forms = await _formBL.GetAllFormsAsync(userRole);
             return Ok(forms);
         }
 
-       
-        /// Get a specific form by ID (accessible to both Admin and Learner).
-        
         [HttpGet("{id:length(24)}")]
         public async Task<IActionResult> GetFormById(string id)
         {
-            var form = await _formBL.GetFormByIdAsync(id);
+            var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
+            var form = await _formBL.GetFormByIdAsync(id, userRole);
+
             if (form == null)
-                return NotFound(new { message = "Form not found." });
+                return NotFound(new { message = "Form not found or not accessible." });
 
             return Ok(form);
         }
 
-        // Create a new form (Admin only).
-        
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateForm([FromBody] FormDTO formDto)
@@ -54,9 +50,6 @@ namespace FormBuilderAPI.Controllers
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });
         }
 
-     
-        /// Update an existing form (Admin only).
-       
         [HttpPut("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateForm(string id, [FromBody] FormDTO formDto)
@@ -66,13 +59,11 @@ namespace FormBuilderAPI.Controllers
 
             var updated = await _formBL.UpdateFormAsync(id, formDto);
             if (!updated)
-                return NotFound(new { message = "Form not found." });
+                return BadRequest(new { message = "Cannot edit a published form or form not found." });
 
             return NoContent();
         }
 
-        // Delete a form by ID (Admin only).
-        
         [HttpDelete("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteForm(string id)
@@ -82,6 +73,25 @@ namespace FormBuilderAPI.Controllers
                 return NotFound(new { message = "Form not found." });
 
             return NoContent();
+        }
+
+        [HttpPut("{id:length(24)}/publish")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> PublishForm(string id)
+        {
+            try
+            {
+                var publishedForm = await _formBL.PublishFormAsync(id);
+                return Ok(publishedForm);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return NotFound(new { message = "Form not found." });
+            }
         }
     }
 }

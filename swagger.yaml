@@ -145,6 +145,21 @@ paths:
       responses:
         '200':
           description: OK
+  '/api/forms/{id}/publish':
+    put:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
   '/api/forms/{formId}/responses':
     post:
       tags:

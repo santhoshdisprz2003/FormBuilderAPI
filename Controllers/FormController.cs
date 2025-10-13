@@ -61,7 +61,7 @@ namespace FormBuilderAPI.Controllers
             if (!updated)
                 return BadRequest(new { message = "Cannot edit a published form or form not found." });
 
-            return NoContent();
+            return Ok(new { message = "Form updated successfully." });
         }
 
         [HttpDelete("{id:length(24)}")]

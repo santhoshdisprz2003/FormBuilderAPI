@@ -68,26 +68,6 @@ paths:
       responses:
         '200':
           description: OK
-    post:
-      tags:
-        - Form
-      requestBody:
-        content:
-          application/json-patch+json:
-            schema:
-              $ref: '#/components/schemas/FormDTO'
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FormDTO'
-          text/json:
-            schema:
-              $ref: '#/components/schemas/FormDTO'
-          application/*+json:
-            schema:
-              $ref: '#/components/schemas/FormDTO'
-      responses:
-        '200':
-          description: OK
   '/api/forms/{id}':
     get:
       tags:
@@ -142,6 +122,56 @@ paths:
             maxLength: 24
             minLength: 24
             type: string
+      responses:
+        '200':
+          description: OK
+  /api/forms/Formconfig:
+    post:
+      tags:
+        - Form
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{formId}/Formlayout':
+    post:
+      tags:
+        - Form
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
       responses:
         '200':
           description: OK
@@ -221,6 +251,20 @@ components:
           type: string
           nullable: true
       additionalProperties: false
+    FormConfigDTO:
+      required:
+        - title
+      type: object
+      properties:
+        title:
+          maxLength: 200
+          minLength: 1
+          type: string
+        description:
+          maxLength: 1000
+          type: string
+          nullable: true
+      additionalProperties: false
     FormDTO:
       required:
         - title
@@ -266,6 +310,20 @@ components:
           items:
             type: string
           nullable: true
+      additionalProperties: false
+    FormLayoutDTO:
+      required:
+        - formId
+        - sections
+      type: object
+      properties:
+        formId:
+          minLength: 1
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSectionDTO'
       additionalProperties: false
     FormSectionDTO:
       required:

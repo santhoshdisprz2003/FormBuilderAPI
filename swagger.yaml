@@ -1,0 +1,321 @@
+openapi: 3.0.1
+info:
+  title: Form Builder API
+  description: 'Dynamic Form Builder backend using .NET, SQL, and MongoDB'
+  version: v1
+paths:
+  '/api/admin/forms/{formId}/responses':
+    get:
+      tags:
+        - Admin
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+  /api/Auth/login:
+    post:
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+      responses:
+        '200':
+          description: OK
+  /api/Auth/register:
+    post:
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+      responses:
+        '200':
+          description: OK
+  /api/forms:
+    get:
+      tags:
+        - Form
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+        - Form
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{id}':
+    get:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+    put:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormDTO'
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{formId}/responses':
+    post:
+      tags:
+        - Response
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+      responses:
+        '200':
+          description: OK
+    get:
+      tags:
+        - Response
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    AuthDTO:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          minLength: 1
+          type: string
+        password:
+          minLength: 1
+          type: string
+        role:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FormDTO:
+      required:
+        - title
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        title:
+          maxLength: 200
+          minLength: 1
+          type: string
+        description:
+          maxLength: 1000
+          type: string
+          nullable: true
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSectionDTO'
+          nullable: true
+      additionalProperties: false
+    FormFieldDTO:
+      required:
+        - label
+        - type
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        label:
+          maxLength: 200
+          minLength: 1
+          type: string
+        type:
+          minLength: 1
+          type: string
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: string
+          nullable: true
+      additionalProperties: false
+    FormSectionDTO:
+      required:
+        - title
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        title:
+          maxLength: 200
+          minLength: 1
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormFieldDTO'
+          nullable: true
+      additionalProperties: false
+    ResponseAnswerDTO:
+      required:
+        - answerText
+        - questionId
+      type: object
+      properties:
+        answerId:
+          type: string
+          format: uuid
+          nullable: true
+        questionId:
+          minLength: 1
+          type: string
+        answerText:
+          minLength: 1
+          type: string
+      additionalProperties: false
+    ResponseDTO:
+      required:
+        - answers
+        - formId
+      type: object
+      properties:
+        responseId:
+          type: string
+          format: uuid
+          nullable: true
+        formId:
+          minLength: 1
+          type: string
+        submittedBy:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponseAnswerDTO'
+      additionalProperties: false
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: 'Enter ''Bearer {your token}'''
+      name: Authorization
+      in: header
+security:
+  - Bearer: [ ]

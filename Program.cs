@@ -127,6 +127,25 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+     // ✅ Automatically generate swagger.yaml in project root
+    using (var scope = app.Services.CreateScope())
+    {
+        var swaggerProvider = scope.ServiceProvider.GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>();
+        var swaggerDoc = swaggerProvider.GetSwagger("v1");
+
+        var yamlPath = Path.Combine(Directory.GetCurrentDirectory(), "swagger.yaml");
+
+        using (var stream = new FileStream(yamlPath, FileMode.Create))
+        using (var writer = new StreamWriter(stream))
+        {
+            var yamlWriter = new Microsoft.OpenApi.Writers.OpenApiYamlWriter(writer);
+            swaggerDoc.SerializeAsV3(yamlWriter);
+            writer.Flush();
+        }
+
+        Console.WriteLine($"Swagger YAML file generated at: {yamlPath}");
+    }
+
 }
 
 // Seed SQL Database

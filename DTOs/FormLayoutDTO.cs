@@ -1,18 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-namespace FormBuilderAPI.DTOs{
-public class FormLayoutDTO
-{
-    [Required]
-    public FormHeaderCardDTO HeaderCard { get; set; } = new();
 
-    public List<FormFieldDTO> Fields { get; set; } = new();
-}
+namespace FormBuilderAPI.DTOs
+{
+    public class FormLayoutDTO
+    {
+        [Required]
+        public FormHeaderCardDTO HeaderCard { get; set; } = new();
+
+        public List<FormFieldDTO> Fields { get; set; } = new();
+    }
 
     public class FormHeaderCardDTO
     {
+         public string Id { get; set; } 
         [Required]
         public string Title { get; set; } = string.Empty;
 
@@ -21,8 +23,8 @@ public class FormLayoutDTO
 
     public class FormFieldDTO
     {
-        public string? QuestionId { get; set; } // optional, matches Mongo model
-
+        public string QuestionId { get; set; }  
+           
         [Required]
         public string Label { get; set; } = string.Empty;
 
@@ -44,7 +46,7 @@ public class FormLayoutDTO
 
     public class FieldOptionDTO
     {
-        public string OptionId { get; set; } = Guid.NewGuid().ToString();
+        public string OptionId { get; set; } 
         public string Value { get; set; } = string.Empty;
     }
 }

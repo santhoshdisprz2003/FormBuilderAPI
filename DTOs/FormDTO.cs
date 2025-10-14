@@ -26,11 +26,11 @@ namespace FormBuilderAPI.DTOs
         public FormStatus Status { get; set; } = FormStatus.Draft;
 
         [Required]
-        public string CreatedBy { get; set; } = string.Empty;
+        public string ?CreatedBy { get; set; } = string.Empty;
 
         public string? PublishedBy { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime ?CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public DateTime? PublishedAt { get; set; }
     }

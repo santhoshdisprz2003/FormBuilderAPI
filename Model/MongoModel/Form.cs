@@ -16,7 +16,7 @@ namespace FormBuilderAPI.Model.MongoModel
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = string.Empty;
+        public string Id { get; set; } = null!; // MongoDB will generate this if null
 
         [BsonElement("config")]
         public FormConfig Config { get; set; } = new();
@@ -76,8 +76,6 @@ namespace FormBuilderAPI.Model.MongoModel
 
         [BsonElement("description")]
         public string Description { get; set; } = string.Empty;
-
-        
     }
 
     // 🔹 Form Field
@@ -85,14 +83,13 @@ namespace FormBuilderAPI.Model.MongoModel
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        [BsonElement("questionId")]
-        public string QuestionId { get; set; } = ObjectId.GenerateNewId().ToString();
+       public string QuestionId { get; set; } = ObjectId.GenerateNewId().ToString();
 
         [BsonElement("label")]
         public string Label { get; set; } = string.Empty;
 
         [BsonElement("type")]
-        public string Type { get; set; } = string.Empty; // text, radio, checkbox, date, etc.
+        public string Type { get; set; } = string.Empty;
 
         [BsonElement("description_enabled")]
         public bool DescriptionEnabled { get; set; } = false;
@@ -122,9 +119,10 @@ namespace FormBuilderAPI.Model.MongoModel
     // 🔹 Option for multiple choice fields
     public class FieldOption
     {
-        [BsonElement("optionId")]
-        public string OptionId { get; set; } = Guid.NewGuid().ToString();
-
+        [BsonId]
+         [BsonIgnoreIfNull] 
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? OptionId { get; set; } = ObjectId.GenerateNewId().ToString();
         [BsonElement("value")]
         public string Value { get; set; } = string.Empty;
     }

@@ -299,6 +299,7 @@ components:
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
@@ -351,6 +352,9 @@ components:
         - title
       type: object
       properties:
+        id:
+          type: string
+          nullable: true
         title:
           minLength: 1
           type: string

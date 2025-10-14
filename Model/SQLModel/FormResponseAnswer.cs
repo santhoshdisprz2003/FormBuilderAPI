@@ -11,7 +11,7 @@ namespace FormBuilderAPI.Model.SQLModel
         public Guid AnswerId { get; set; }
 
         [Required]
-        public Guid ResponseId { get; set; } // ✅ renamed from FormResponseId
+        public Guid ResponseId { get; set; } 
 
         [Required]
         public string QuestionId { get; set; } = string.Empty;

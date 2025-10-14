@@ -251,40 +251,61 @@ components:
           type: string
           nullable: true
       additionalProperties: false
+    FieldOptionDTO:
+      type: object
+      properties:
+        optionId:
+          type: string
+          nullable: true
+        value:
+          type: string
+          nullable: true
+      additionalProperties: false
     FormConfigDTO:
       required:
         - title
       type: object
       properties:
         title:
-          maxLength: 200
           minLength: 1
           type: string
         description:
-          maxLength: 1000
           type: string
           nullable: true
       additionalProperties: false
     FormDTO:
       required:
-        - title
+        - config
+        - createdBy
+        - layout
+        - status
       type: object
       properties:
         id:
           type: string
           nullable: true
-        title:
-          maxLength: 200
+        config:
+          $ref: '#/components/schemas/FormConfigDTO'
+        layout:
+          $ref: '#/components/schemas/FormLayoutDTO'
+        status:
+          $ref: '#/components/schemas/FormStatus'
+        createdBy:
           minLength: 1
           type: string
-        description:
-          maxLength: 1000
+        publishedBy:
           type: string
           nullable: true
-        sections:
-          type: array
-          items:
-            $ref: '#/components/schemas/FormSectionDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
           nullable: true
       additionalProperties: false
     FormFieldDTO:
@@ -293,56 +314,68 @@ components:
         - type
       type: object
       properties:
-        id:
+        questionId:
           type: string
           nullable: true
         label:
-          maxLength: 200
           minLength: 1
           type: string
         type:
           minLength: 1
           type: string
-        required:
+        descriptionEnabled:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        singleChoice:
+          type: boolean
+        multipleChoice:
           type: boolean
         options:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/FieldOptionDTO'
           nullable: true
-      additionalProperties: false
-    FormLayoutDTO:
-      required:
-        - formId
-        - sections
-      type: object
-      properties:
-        formId:
-          minLength: 1
+        format:
           type: string
-        sections:
-          type: array
-          items:
-            $ref: '#/components/schemas/FormSectionDTO'
+          nullable: true
+        required:
+          type: boolean
+        order:
+          type: integer
+          format: int32
       additionalProperties: false
-    FormSectionDTO:
+    FormHeaderCardDTO:
       required:
         - title
       type: object
       properties:
-        id:
-          type: string
-          nullable: true
         title:
-          maxLength: 200
           minLength: 1
           type: string
+        description:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FormLayoutDTO:
+      required:
+        - headerCard
+      type: object
+      properties:
+        headerCard:
+          $ref: '#/components/schemas/FormHeaderCardDTO'
         fields:
           type: array
           items:
             $ref: '#/components/schemas/FormFieldDTO'
           nullable: true
       additionalProperties: false
+    FormStatus:
+      enum:
+        - Draft
+        - Published
+      type: string
     ResponseAnswerDTO:
       required:
         - answerText

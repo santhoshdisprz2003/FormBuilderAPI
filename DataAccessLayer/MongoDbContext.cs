@@ -22,7 +22,8 @@ namespace FormBuilderAPI.DataAccessLayer
             _database = client.GetDatabase(databaseName);
         }
 
+        // Main Forms collection
         public IMongoCollection<Form> Forms => _database.GetCollection<Form>("Forms");
-        public IMongoCollection<FormSection> FormSections => _database.GetCollection<FormSection>("FormSections");
+
     }
 }

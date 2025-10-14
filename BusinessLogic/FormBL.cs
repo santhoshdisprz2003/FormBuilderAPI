@@ -6,8 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FormBuilderAPI.Model.SQLModel;
 using Microsoft.EntityFrameworkCore;
+using MongoFormStatus = FormBuilderAPI.Model.MongoModel.FormStatus;
+using DTOFormStatus = FormBuilderAPI.DTOs.FormStatus;
 
 namespace FormBuilderAPI.BusinessLogicLayer
 {
@@ -25,15 +26,9 @@ namespace FormBuilderAPI.BusinessLogicLayer
         public async Task<IEnumerable<Form>> GetAllFormsAsync(string userRole)
         {
             if (userRole == "Admin")
-            {
-                // Admin sees everything
                 return await _forms.Find(_ => true).ToListAsync();
-            }
-            else
-            {
-                // Learners see only Published forms
-                return await _forms.Find(f => f.Status == FormStatus.Published).ToListAsync();
-            }
+            
+            return await _forms.Find(f => f.Status == MongoFormStatus.Published).ToListAsync();
         }
 
         public async Task<Form?> GetFormByIdAsync(string id, string userRole)
@@ -42,79 +37,105 @@ namespace FormBuilderAPI.BusinessLogicLayer
 
             if (userRole != "Admin")
             {
-                // Learners can access only published forms
-                var statusFilter = Builders<Form>.Filter.Eq(f => f.Status, FormStatus.Published);
+                var statusFilter = Builders<Form>.Filter.Eq(f => f.Status, MongoFormStatus.Published);
                 filter = Builders<Form>.Filter.And(filter, statusFilter);
             }
 
             return await _forms.Find(filter).FirstOrDefaultAsync();
         }
 
-        public async Task<string> CreateFormConfigAsync(FormConfigDTO dto)
+        public async Task<string> CreateFormConfigAsync(FormConfigDTO dto,string createdBy)
         {
             var form = new Form
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                Status = FormStatus.Draft,
-                CreatedAt = DateTime.UtcNow,
-                Sections = new List<FormSection>() // empty initially
+                Config = new FormConfig
+                {
+                    Title = dto.Title,
+                    Description = dto.Description
+                },
+                Layout = new FormLayout(), // Empty layout initially
+                Status = MongoFormStatus.Draft,
+                CreatedBy = createdBy,
+                CreatedAt = DateTime.UtcNow
             };
 
             await _forms.InsertOneAsync(form);
             return form.Id;
         }
 
-        public async Task<bool> CreateFormLayoutAsync(FormLayoutDTO layoutDto)
+        public async Task<bool> CreateFormLayoutAsync(string formId, FormLayoutDTO layoutDto)
         {
-            var existingForm = await _forms.Find(f => f.Id == layoutDto.FormId).FirstOrDefaultAsync();
+            var existingForm = await _forms.Find(f => f.Id == formId).FirstOrDefaultAsync();
             if (existingForm == null)
                 throw new Exception("Form not found.");
 
-            // Map DTO sections to Mongo sections
-            var sections = layoutDto.Sections?.ConvertAll(s => new FormSection
+            // Map DTO to MongoDB layout
+            var layout = new FormLayout
             {
-                Title = s.Title,
-                Fields = s.Fields?.ConvertAll(f => new FormField
+                HeaderCard = new FormHeaderCard
+                {
+                    Title = layoutDto.HeaderCard.Title,
+                    Description = layoutDto.HeaderCard.Description
+                },
+                Fields = layoutDto.Fields?.Select(f => new FormField
                 {
                     Label = f.Label,
                     Type = f.Type,
+                    DescriptionEnabled = f.DescriptionEnabled,
+                    Description = f.Description,
+                    SingleChoice = f.SingleChoice,
+                    MultipleChoice = f.MultipleChoice,
+                    Options = f.Options?.Select(o => new FieldOption
+                    {
+                        Value = o.Value,
+                        OptionId = o.OptionId ?? Guid.NewGuid().ToString()
+                    }).ToList() ?? new List<FieldOption>(),
+                    Format = f.Format,
                     Required = f.Required,
-                    Options = f.Options ?? new List<string>()
-                }) ?? new List<FormField>()
-            }) ?? new List<FormSection>();
+                    Order = f.Order
+                }).ToList() ?? new List<FormField>()
+            };
 
-            var update = Builders<Form>.Update.Set(f => f.Sections, sections);
+            var update = Builders<Form>.Update.Set(f => f.Layout, layout);
 
-            var result = await _forms.UpdateOneAsync(f => f.Id == layoutDto.FormId, update);
-
+            var result = await _forms.UpdateOneAsync(f => f.Id == formId, update);
             return result.ModifiedCount > 0;
         }
-
 
         public async Task<bool> UpdateFormAsync(string id, FormDTO dto)
         {
             var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
-            if (existing == null)
+            if (existing == null || existing.Status == MongoFormStatus.Published)
                 return false;
 
-            if (existing.Status == FormStatus.Published)
-                return false;  // Cannot update published forms
-
             var update = Builders<Form>.Update
-                .Set(f => f.Title, dto.Title)
-                .Set(f => f.Description, dto.Description)
-                .Set(f => f.Sections, dto.Sections?.ConvertAll(s => new FormSection
+                .Set(f => f.Config.Title, dto.Config.Title)
+                .Set(f => f.Config.Description, dto.Config.Description)
+                .Set(f => f.Layout, new FormLayout
                 {
-                    Title = s.Title,
-                    Fields = s.Fields?.ConvertAll(f => new FormField
+                    HeaderCard = new FormHeaderCard
+                    {
+                        Title = dto.Layout.HeaderCard.Title,
+                        Description = dto.Layout.HeaderCard.Description
+                    },
+                    Fields = dto.Layout.Fields.Select(f => new FormField
                     {
                         Label = f.Label,
                         Type = f.Type,
+                        DescriptionEnabled = f.DescriptionEnabled,
+                        Description = f.Description,
+                        SingleChoice = f.SingleChoice,
+                        MultipleChoice = f.MultipleChoice,
+                        Options = f.Options.Select(o => new FieldOption
+                        {
+                            Value = o.Value,
+                            OptionId = o.OptionId ?? Guid.NewGuid().ToString()
+                        }).ToList(),
+                        Format = f.Format,
                         Required = f.Required,
-                        Options = f.Options ?? new List<string>()
-                    }) ?? new List<FormField>()
-                }) ?? new List<FormSection>())
+                        Order = f.Order
+                    }).ToList()
+                })
                 .Set(f => f.UpdatedAt, DateTime.UtcNow);
 
             var result = await _forms.UpdateOneAsync(f => f.Id == id, update);
@@ -127,22 +148,21 @@ namespace FormBuilderAPI.BusinessLogicLayer
             if (existing == null)
                 throw new Exception("Form not found.");
 
-            if (existing.Status == FormStatus.Published)
+            if (existing.Status == MongoFormStatus.Published)
                 throw new InvalidOperationException("Form is already published.");
 
             var update = Builders<Form>.Update
-                .Set(f => f.Status, FormStatus.Published)
+                .Set(f => f.Status, MongoFormStatus.Published)
                 .Set(f => f.PublishedAt, DateTime.UtcNow);
 
             await _forms.UpdateOneAsync(f => f.Id == id, update);
 
-            // Return the updated form
             return await _forms.Find(f => f.Id == id).FirstOrDefaultAsync()!;
         }
 
         public async Task<bool> DeleteFormAsync(string id)
         {
-            // Delete all responses from SQL first
+            // Delete related responses from SQL first
             var responses = await _sqlContext.FormResponses
                 .Where(r => r.FormId == id)
                 .Include(r => r.Answers)
@@ -158,7 +178,6 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 await _sqlContext.SaveChangesAsync();
             }
 
-            // Delete form from MongoDB
             var result = await _forms.DeleteOneAsync(f => f.Id == id);
             return result.DeletedCount > 0;
         }

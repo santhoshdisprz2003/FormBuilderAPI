@@ -28,8 +28,8 @@ namespace FormBuilderAPI.DTOs
         [Required]
         public string QuestionId { get; set; } = string.Empty; // Corresponds to Mongo FormField.Id
 
-        [Required]
-        public string AnswerText { get; set; } = string.Empty;
+        // For text-based answers
+        public string? AnswerText { get; set; }
     }
 
     // DTO used when returning responses (Admin views)

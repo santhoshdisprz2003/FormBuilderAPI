@@ -14,7 +14,7 @@ namespace FormBuilderAPI.DTOs
 
     public class FormHeaderCardDTO
     {
-         public string Id { get; set; } 
+         public string Id { get; set; } =string.Empty;
         [Required]
         public string Title { get; set; } = string.Empty;
 
@@ -23,7 +23,7 @@ namespace FormBuilderAPI.DTOs
 
     public class FormFieldDTO
     {
-        public string QuestionId { get; set; }  
+        public string QuestionId { get; set; } =string.Empty;
            
         [Required]
         public string Label { get; set; } = string.Empty;
@@ -46,7 +46,7 @@ namespace FormBuilderAPI.DTOs
 
     public class FieldOptionDTO
     {
-        public string OptionId { get; set; } 
+        public string OptionId { get; set; }=string.Empty; 
         public string Value { get; set; } = string.Empty;
     }
 }

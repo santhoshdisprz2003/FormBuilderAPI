@@ -382,7 +382,6 @@ components:
       type: string
     ResponseAnswerDTO:
       required:
-        - answerText
         - questionId
       type: object
       properties:
@@ -394,8 +393,8 @@ components:
           minLength: 1
           type: string
         answerText:
-          minLength: 1
           type: string
+          nullable: true
       additionalProperties: false
     ResponseDTO:
       required:

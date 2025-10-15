@@ -47,7 +47,8 @@ namespace FormBuilderAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
                 var userName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-
+if (string.IsNullOrEmpty(userName))
+    throw new ArgumentException("CreatedBy cannot be null");
 
             var newFormId = await _formBL.CreateFormConfigAsync(configDto,userName);
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });

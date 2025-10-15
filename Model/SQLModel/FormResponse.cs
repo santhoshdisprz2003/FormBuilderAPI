@@ -9,7 +9,7 @@ namespace FormBuilderAPI.Model.SQLModel
     public class FormResponse
     {
         [Key]
-        public Guid ResponseId { get; set; }
+        public int ResponseId { get; set; }
 
         [Required]
         public string FormId { get; set; } = string.Empty; // Mongo ObjectId as string

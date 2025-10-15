@@ -386,8 +386,8 @@ components:
       type: object
       properties:
         answerId:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           nullable: true
         questionId:
           minLength: 1
@@ -403,8 +403,8 @@ components:
       type: object
       properties:
         responseId:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           nullable: true
         formId:
           minLength: 1

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FormBuilderAPI.Migrations
 {
     [DbContext(typeof(SQLDbContext))]
-    [Migration("20251007101006_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251015153154_CleanStart")]
+    partial class CleanStart
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,9 +27,11 @@ namespace FormBuilderAPI.Migrations
 
             modelBuilder.Entity("FormBuilderAPI.Model.SQLModel.FormResponse", b =>
                 {
-                    b.Property<Guid>("ResponseId")
+                    b.Property<int>("ResponseId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResponseId"));
 
                     b.Property<string>("FormId")
                         .IsRequired()
@@ -50,34 +52,63 @@ namespace FormBuilderAPI.Migrations
 
             modelBuilder.Entity("FormBuilderAPI.Model.SQLModel.FormResponseAnswer", b =>
                 {
-                    b.Property<Guid>("AnswerId")
+                    b.Property<int>("AnswerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AnswerId"));
 
                     b.Property<string>("AnswerText")
-                        .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
-
-                    b.Property<Guid>("FormResponseId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("QuestionId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ResponseId")
+                        .HasColumnType("int");
+
                     b.HasKey("AnswerId");
 
-                    b.HasIndex("FormResponseId");
+                    b.HasIndex("ResponseId");
 
                     b.ToTable("FormResponseAnswers");
+                });
+
+            modelBuilder.Entity("FormBuilderAPI.Model.SQLModel.User", b =>
+                {
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("FormBuilderAPI.Model.SQLModel.FormResponseAnswer", b =>
                 {
                     b.HasOne("FormBuilderAPI.Model.SQLModel.FormResponse", "FormResponse")
                         .WithMany("Answers")
-                        .HasForeignKey("FormResponseId")
+                        .HasForeignKey("ResponseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

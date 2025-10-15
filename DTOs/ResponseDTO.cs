@@ -7,7 +7,7 @@ namespace FormBuilderAPI.DTOs
     // DTO used for submitting responses (Learners)
     public class ResponseDTO
     {
-        public Guid? ResponseId { get; set; } // Auto-generated in SQL
+        public int? ResponseId { get; set; } // Auto-generated in SQL
 
         [Required]
         public string FormId { get; set; } = string.Empty; // Mongo ObjectId string
@@ -23,7 +23,7 @@ namespace FormBuilderAPI.DTOs
     // DTO representing an individual answer
     public class ResponseAnswerDTO
     {
-        public Guid? AnswerId { get; set; } // Auto-generated in SQL
+        public int? AnswerId { get; set; } // Auto-generated in SQL
 
         [Required]
         public string QuestionId { get; set; } = string.Empty; // Corresponds to Mongo FormField.Id
@@ -35,7 +35,7 @@ namespace FormBuilderAPI.DTOs
     // DTO used when returning responses (Admin views)
     public class ResponseDetailDTO
     {
-        public Guid ResponseId { get; set; }
+        public int ResponseId { get; set; }
         public string FormId { get; set; } = string.Empty;
         public string SubmittedBy { get; set; } = string.Empty;
         public DateTime SubmittedAt { get; set; }

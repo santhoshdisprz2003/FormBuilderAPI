@@ -20,7 +20,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _formBL = formBL;
         }
 
-        public async Task<Guid> SubmitResponseAsync(ResponseDTO dto)
+        public async Task<int> SubmitResponseAsync(ResponseDTO dto)
         {
             // Determine user role
             string userRole = "Learner"; // replace with actual lookup

@@ -8,10 +8,10 @@ namespace FormBuilderAPI.Model.SQLModel
     public class FormResponseAnswer
     {
         [Key]
-        public Guid AnswerId { get; set; }
+        public int AnswerId { get; set; }
 
         [Required]
-        public Guid ResponseId { get; set; } 
+        public int ResponseId { get; set; } 
 
         [Required]
         public string QuestionId { get; set; } = string.Empty;

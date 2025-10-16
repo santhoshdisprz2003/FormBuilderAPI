@@ -22,16 +22,18 @@ namespace FormBuilderAPI.BusinessLogicLayer
 
         public async Task<int> SubmitResponseAsync(ResponseDTO dto)
         {
-            // Determine user role
-            string userRole = "Learner"; // replace with actual lookup
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-            // Fetch form layout
+            // 1️⃣ Determine user role (for form access, currently fixed as "Learner")
+            string userRole = "Learner";
+
+            // 2️⃣ Fetch form layout
             var form = await _formBL.GetFormByIdAsync(dto.FormId, userRole);
-
             if (form?.Layout?.Fields == null)
                 throw new Exception("Form not found or access denied.");
 
-            // Map answers safely
+            // 3️⃣ Map answers safely
             var answers = dto.Answers?
                 .Select(a =>
                 {
@@ -42,8 +44,8 @@ namespace FormBuilderAPI.BusinessLogicLayer
 
                     if (question.Options != null && question.Options.Count > 0)
                     {
+                        // Handle multiple-choice or single-choice
                         List<string> selectedOptionIds;
-
                         if (question.MultipleChoice)
                         {
                             var submittedValues = a.AnswerText?
@@ -83,6 +85,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 .Where(a => a != null)
                 .ToList() ?? new List<FormResponseAnswer>();
 
+            // 4️⃣ Create and save the FormResponse
             var response = new FormResponse
             {
                 FormId = dto.FormId,
@@ -94,6 +97,45 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext.FormResponses.Add(response);
             await _sqlContext.SaveChangesAsync();
 
+            // -------------------
+            // 5️⃣ Handle file uploads per answer
+            // -------------------
+            long maxFileSize = 5 * 1024 * 1024; // 5 MB
+            string[] allowedTypes = { "jpg", "jpeg", "png", "pdf", "docx" };
+
+            foreach (var answer in dto.Answers)
+            {
+                var file = answer.File;
+                if (file == null) continue;
+
+                // Validate file size
+                if (file.FileMaxSize > maxFileSize)
+                    throw new Exception($"File '{file.FileName}' exceeds maximum size of 5 MB.");
+
+                // Validate file extension
+                var extension = file.FileName.Split('.').LastOrDefault()?.ToLower();
+                if (extension == null || !allowedTypes.Contains(extension))
+                    throw new Exception($"File '{file.FileName}' has invalid type. Allowed types: {string.Join(',', allowedTypes)}");
+
+                // Save file in DB
+                var responseFile = new ResponseFile
+                {
+                    ResponseId = response.ResponseId,
+                    QuestionId = file.QuestionId,
+                    FileName = file.FileName,
+                    FileType = file.FileType,
+                    FileMaxSize = (int)file.FileMaxSize,
+                    Base64Content = file.Base64Content,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _sqlContext.ResponseFiles.Add(responseFile);
+            }
+
+            // Save all uploaded files
+            await _sqlContext.SaveChangesAsync();
+
+            // 6️⃣ Return the ResponseId
             return response.ResponseId;
         }
 
@@ -143,5 +185,28 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 }).ToList()
             }).ToList();
         }
+
+        public async Task<ResponseFileDTO?> GetFileByResponseIdAndFileNameAsync(int responseId, string fileName)
+        {
+            var file = await _sqlContext.ResponseFiles
+                .Where(f => f.ResponseId == responseId && f.FileName == fileName)
+                .FirstOrDefaultAsync();
+
+            if (file == null)
+                return null;
+
+            return new ResponseFileDTO
+            {
+                ResponseId = file.ResponseId,
+                QuestionId = file.QuestionId,
+                FileName = file.FileName,
+                FileType = file.FileType,
+                FileMaxSize = file.FileMaxSize,
+                Base64Content = file.Base64Content,
+                UploadedAt = file.UploadedAt
+            };
+        }
+
+
     }
 }

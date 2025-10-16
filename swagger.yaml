@@ -233,6 +233,25 @@ paths:
       responses:
         '200':
           description: OK
+  '/api/responses/{responseId}/files/{fileName}':
+    get:
+      tags:
+        - Response
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
 components:
   schemas:
     AuthDTO:
@@ -395,6 +414,8 @@ components:
         answerText:
           type: string
           nullable: true
+        file:
+          $ref: '#/components/schemas/ResponseFileUploadDTO'
       additionalProperties: false
     ResponseDTO:
       required:
@@ -419,6 +440,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ResponseAnswerDTO'
+      additionalProperties: false
+    ResponseFileUploadDTO:
+      required:
+        - base64Content
+        - fileName
+        - fileType
+        - questionId
+      type: object
+      properties:
+        questionId:
+          minLength: 1
+          type: string
+        fileName:
+          minLength: 1
+          type: string
+        fileType:
+          minLength: 1
+          type: string
+        fileMaxSize:
+          type: integer
+          format: int64
+        base64Content:
+          minLength: 1
+          type: string
       additionalProperties: false
   securitySchemes:
     Bearer:

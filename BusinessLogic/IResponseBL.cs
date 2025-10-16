@@ -12,7 +12,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
         Task<List<ResponseDetailDTO>> GetResponsesForUserAsync(string formId, string userId);
         Task<List<ResponseDetailDTO>> GetResponsesForFormAsync(string formId);
 
-Task<ResponseFileDTO?> GetFileByResponseIdAndFileNameAsync(int responseId, string fileName);
+Task<ResponseFileDTO> GetFileByResponseIdAndFileIdAsync(int responseId, int fileId);
 
      
 

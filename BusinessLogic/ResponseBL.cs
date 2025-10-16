@@ -186,27 +186,26 @@ namespace FormBuilderAPI.BusinessLogicLayer
             }).ToList();
         }
 
-        public async Task<ResponseFileDTO?> GetFileByResponseIdAndFileNameAsync(int responseId, string fileName)
-        {
-            var file = await _sqlContext.ResponseFiles
-                .Where(f => f.ResponseId == responseId && f.FileName == fileName)
-                .FirstOrDefaultAsync();
+        public async Task<ResponseFileDTO?> GetFileByResponseIdAndFileIdAsync(int responseId, int fileId)
+{
+    var file = await _sqlContext.ResponseFiles
+        .Where(f => f.ResponseId == responseId && f.FileId == fileId)
+        .FirstOrDefaultAsync();
 
-            if (file == null)
-                return null;
+    if (file == null)
+        return null;
 
-            return new ResponseFileDTO
-            {
-                ResponseId = file.ResponseId,
-                QuestionId = file.QuestionId,
-                FileName = file.FileName,
-                FileType = file.FileType,
-                FileMaxSize = file.FileMaxSize,
-                Base64Content = file.Base64Content,
-                UploadedAt = file.UploadedAt
-            };
-        }
-
+    return new ResponseFileDTO
+    {
+        ResponseId = file.ResponseId,
+        QuestionId = file.QuestionId,
+        FileName = file.FileName,
+        FileType = file.FileType,
+        FileMaxSize = file.FileMaxSize,
+        Base64Content = file.Base64Content,
+        UploadedAt = file.UploadedAt
+    };
+}
 
     }
 }

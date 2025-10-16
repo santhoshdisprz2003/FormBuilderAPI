@@ -64,12 +64,14 @@ namespace FormBuilderAPI.Controllers
             return Ok(responses);
         }
 
-       [HttpGet("{responseId:int}/files/{fileName}")]
-[Authorize(Roles = "Admin")]
-public async Task<IActionResult> DownloadFile(int responseId, string fileName)
+
+
+        [HttpGet("download-file/{responseId}/{fileId}")]
+        [Authorize(Roles = "Admin")]
+public async Task<IActionResult> DownloadFile(int responseId, int fileId)
 {
-    // Fetch the file from database
-    var file = await _responseBL.GetFileByResponseIdAndFileNameAsync(responseId, fileName);
+    // Fetch the file using responseId and fileId
+    var file = await _responseBL.GetFileByResponseIdAndFileIdAsync(responseId, fileId);
 
     if (file == null)
         return NotFound(new { message = "File not found for this response." });
@@ -80,6 +82,7 @@ public async Task<IActionResult> DownloadFile(int responseId, string fileName)
     // Return as downloadable file
     return File(fileBytes, file.FileType, file.FileName);
 }
+
 
 
 

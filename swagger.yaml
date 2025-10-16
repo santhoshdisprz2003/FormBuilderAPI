@@ -233,7 +233,7 @@ paths:
       responses:
         '200':
           description: OK
-  '/api/responses/{responseId}/files/{fileName}':
+  '/api/responses/download-file/{responseId}/{fileId}':
     get:
       tags:
         - Response
@@ -244,11 +244,12 @@ paths:
           schema:
             type: integer
             format: int32
-        - name: fileName
+        - name: fileId
           in: path
           required: true
           schema:
-            type: string
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK

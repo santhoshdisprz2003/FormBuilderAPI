@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using FormBuilderAPI.DTOs;
 using FormBuilderAPI.BusinessLogicLayer;
 using System.Security.Claims;
+using System.Linq;
 
 namespace FormBuilderAPI.Controllers
 {
@@ -20,15 +21,14 @@ namespace FormBuilderAPI.Controllers
             _formBL = formBL ?? throw new ArgumentNullException(nameof(formBL));
         }
 
+        // ✅ GET all forms with pagination
         [HttpGet]
         public async Task<IActionResult> GetAllForms(int offset = 0, int limit = 10)
         {
             var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
 
-            // Get paged forms
             var (forms, totalCount) = await _formBL.GetAllFormsAsync(userRole, offset, limit);
 
-            // Return paginated response
             var response = new
             {
                 TotalCount = totalCount,
@@ -40,7 +40,7 @@ namespace FormBuilderAPI.Controllers
             return Ok(response);
         }
 
-
+        // ✅ GET form by ID
         [HttpGet("{id:length(24)}")]
         public async Task<IActionResult> GetFormById(string id)
         {
@@ -53,12 +53,14 @@ namespace FormBuilderAPI.Controllers
             return Ok(form);
         }
 
-        [HttpPost("Formconfig")]
+        // ✅ POST - Create new form (configuration only)
+        [HttpPost("formconfig")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateFormConfig([FromBody] FormConfigDTO configDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             var userName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(userName))
                 throw new ArgumentException("CreatedBy cannot be null");
@@ -67,27 +69,7 @@ namespace FormBuilderAPI.Controllers
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });
         }
 
-        [HttpPost("{formId:length(24)}/Formlayout")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateFormLayout(string formId, [FromBody] FormLayoutDTO layoutDto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var success = await _formBL.CreateFormLayoutAsync(formId, layoutDto);
-                if (!success)
-                    return NotFound(new { message = "Form not found or layout not updated." });
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
+        // ✅ PUT - Update form (title, description, layout)
         [HttpPut("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateForm(string id, [FromBody] FormDTO formDto)
@@ -102,6 +84,7 @@ namespace FormBuilderAPI.Controllers
             return Ok(new { message = "Form updated successfully." });
         }
 
+        // ✅ DELETE - Delete form
         [HttpDelete("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteForm(string id)
@@ -113,6 +96,7 @@ namespace FormBuilderAPI.Controllers
             return Ok(new { message = "Form deleted successfully." });
         }
 
+        // ✅ PUT - Publish form
         [HttpPut("{id:length(24)}/publish")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PublishForm(string id)

@@ -138,7 +138,7 @@ paths:
       responses:
         '200':
           description: OK
-  /api/forms/Formconfig:
+  /api/forms/formconfig:
     post:
       tags:
         - Form
@@ -156,35 +156,6 @@ paths:
           application/*+json:
             schema:
               $ref: '#/components/schemas/FormConfigDTO'
-      responses:
-        '200':
-          description: OK
-  '/api/forms/{formId}/Formlayout':
-    post:
-      tags:
-        - Form
-      parameters:
-        - name: formId
-          in: path
-          required: true
-          schema:
-            maxLength: 24
-            minLength: 24
-            type: string
-      requestBody:
-        content:
-          application/json-patch+json:
-            schema:
-              $ref: '#/components/schemas/FormLayoutDTO'
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FormLayoutDTO'
-          text/json:
-            schema:
-              $ref: '#/components/schemas/FormLayoutDTO'
-          application/*+json:
-            schema:
-              $ref: '#/components/schemas/FormLayoutDTO'
       responses:
         '200':
           description: OK

@@ -77,24 +77,26 @@ namespace FormBuilderAPI.BusinessLogicLayer
             return form.Id;
         }
 
-        public async Task<bool> CreateFormLayoutAsync(string formId, FormLayoutDTO layoutDto)
+        public async Task<bool> UpdateFormAsync(string id, FormDTO dto)
         {
-            var existingForm = await _forms.Find(f => f.Id == formId).FirstOrDefaultAsync();
-            if (existingForm == null)
+            var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
+            if (existing == null)
                 throw new Exception("Form not found.");
 
-            // Map DTO to MongoDB layout
-            var layout = new FormLayout
+            if (existing.Status == MongoFormStatus.Published)
+                throw new InvalidOperationException("Cannot edit a published form.");
+
+            // Build Layout object (from CreateFormLayoutAsync logic)
+            var updatedLayout = new FormLayout
             {
                 HeaderCard = new FormHeaderCard
                 {
-                    Title = layoutDto.HeaderCard.Title,
-                    Description = layoutDto.HeaderCard.Description
-                    // Id will be generated automatically by MongoDB
+                    Title = dto.Layout.HeaderCard.Title,
+                    Description = dto.Layout.HeaderCard.Description
+                    // MongoDB generates _id automatically
                 },
-                Fields = layoutDto.Fields?.Select(f => new FormField
+                Fields = dto.Layout.Fields?.Select(f => new FormField
                 {
-                    // QuestionId will be generated automatically by MongoDB
                     Label = f.Label,
                     Type = f.Type,
                     DescriptionEnabled = f.DescriptionEnabled,
@@ -104,56 +106,20 @@ namespace FormBuilderAPI.BusinessLogicLayer
                     Options = f.Options?.Select(o => new FieldOption
                     {
                         Value = o.Value
-                        // OptionId will be generated automatically by MongoDB
+                        // OptionId auto-generated
                     }).ToList() ?? new List<FieldOption>(),
                     Format = f.Format,
                     Required = f.Required,
                     Order = f.Order
+                    // QuestionId auto-generated
                 }).ToList() ?? new List<FormField>()
             };
 
-            var update = Builders<Form>.Update.Set(f => f.Layout, layout);
-
-            var result = await _forms.UpdateOneAsync(f => f.Id == formId, update);
-            return result.ModifiedCount > 0;
-        }
-
-        public async Task<bool> UpdateFormAsync(string id, FormDTO dto)
-        {
-            var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
-            if (existing == null || existing.Status == MongoFormStatus.Published)
-                return false;
-
+            // Build update definition (combine Config + Layout updates)
             var update = Builders<Form>.Update
                 .Set(f => f.Config.Title, dto.Config.Title)
                 .Set(f => f.Config.Description, dto.Config.Description)
-                .Set(f => f.Layout, new FormLayout
-                {
-                    HeaderCard = new FormHeaderCard
-                    {
-                        Title = dto.Layout.HeaderCard.Title,
-                        Description = dto.Layout.HeaderCard.Description
-                        // Id will be generated automatically
-                    },
-                    Fields = dto.Layout.Fields.Select(f => new FormField
-                    {
-                        Label = f.Label,
-                        Type = f.Type,
-                        DescriptionEnabled = f.DescriptionEnabled,
-                        Description = f.Description,
-                        SingleChoice = f.SingleChoice,
-                        MultipleChoice = f.MultipleChoice,
-                        Options = f.Options.Select(o => new FieldOption
-                        {
-                            Value = o.Value
-                            // OptionId will be generated automatically
-                        }).ToList(),
-                        Format = f.Format,
-                        Required = f.Required,
-                        Order = f.Order
-                        // QuestionId will be generated automatically
-                    }).ToList()
-                })
+                .Set(f => f.Layout, updatedLayout)
                 .Set(f => f.UpdatedAt, DateTime.UtcNow);
 
             var result = await _forms.UpdateOneAsync(f => f.Id == id, update);

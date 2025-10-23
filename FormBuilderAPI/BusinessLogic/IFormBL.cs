@@ -7,7 +7,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
 {
     public interface IFormBL
     {
-        Task<IEnumerable<Form>> GetAllFormsAsync(string userRole);
+        Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit);     
         Task<Form?> GetFormByIdAsync(string id, string userRole);
         Task<string> CreateFormConfigAsync(FormConfigDTO configDto,string createdBy);
         Task<bool> CreateFormLayoutAsync(string formId, FormLayoutDTO layoutDto);

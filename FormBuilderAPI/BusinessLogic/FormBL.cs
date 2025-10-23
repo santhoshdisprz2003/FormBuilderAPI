@@ -23,12 +23,25 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext = sqlContext;
         }
 
-        public async Task<IEnumerable<Form>> GetAllFormsAsync(string userRole)
+        public async Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit)
         {
-            if (userRole == "Admin")
-                return await _forms.Find(_ => true).ToListAsync();
+            var filter = Builders<Form>.Filter.Empty;
 
-            return await _forms.Find(f => f.Status == MongoFormStatus.Published).ToListAsync();
+            // Apply filter for non-admin users
+            if (userRole != "Admin")
+                filter = Builders<Form>.Filter.Eq(f => f.Status, MongoFormStatus.Published);
+
+            // Get total count for pagination info
+            var totalCount = await _forms.CountDocumentsAsync(filter);
+
+            // Apply pagination
+            var forms = await _forms.Find(filter)
+                                    .SortByDescending(f => f.CreatedAt)  // optional, helps with ordering
+                                    .Skip(offset)
+                                    .Limit(limit)
+                                    .ToListAsync();
+
+            return (forms, totalCount);
         }
 
         public async Task<Form?> GetFormByIdAsync(string id, string userRole)

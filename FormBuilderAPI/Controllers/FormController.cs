@@ -21,12 +21,25 @@ namespace FormBuilderAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllForms()
+        public async Task<IActionResult> GetAllForms(int offset = 0, int limit = 10)
         {
             var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
-            var forms = await _formBL.GetAllFormsAsync(userRole);
-            return Ok(forms);
+
+            // Get paged forms
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync(userRole, offset, limit);
+
+            // Return paginated response
+            var response = new
+            {
+                TotalCount = totalCount,
+                Offset = offset,
+                Limit = limit,
+                Data = forms
+            };
+
+            return Ok(response);
         }
+
 
         [HttpGet("{id:length(24)}")]
         public async Task<IActionResult> GetFormById(string id)
@@ -46,11 +59,11 @@ namespace FormBuilderAPI.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-                var userName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-if (string.IsNullOrEmpty(userName))
-    throw new ArgumentException("CreatedBy cannot be null");
+            var userName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(userName))
+                throw new ArgumentException("CreatedBy cannot be null");
 
-            var newFormId = await _formBL.CreateFormConfigAsync(configDto,userName);
+            var newFormId = await _formBL.CreateFormConfigAsync(configDto, userName);
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });
         }
 

@@ -118,6 +118,17 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // React dev server
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+
 // ===============================
 // 8️⃣  BUILD & RUN APP
 // ===============================
@@ -127,7 +138,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-     // ✅ Automatically generate swagger.yaml in project root
+    // ✅ Automatically generate swagger.yaml in project root
     using (var scope = app.Services.CreateScope())
     {
         var swaggerProvider = scope.ServiceProvider.GetRequiredService<Swashbuckle.AspNetCore.Swagger.ISwaggerProvider>();
@@ -147,6 +158,9 @@ if (app.Environment.IsDevelopment())
     }
 
 }
+
+
+app.UseCors("AllowReactApp");
 
 // Seed SQL Database
 await DataBaseSeeder.SeedAsync(app.Services);

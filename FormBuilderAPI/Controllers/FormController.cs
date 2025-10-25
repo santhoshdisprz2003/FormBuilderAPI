@@ -53,7 +53,7 @@ namespace FormBuilderAPI.Controllers
             return Ok(form);
         }
 
-        // ✅ POST - Create new form (configuration only)
+        // ✅ POST - Create Form Config
         [HttpPost("formconfig")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateFormConfig([FromBody] FormConfigDTO configDto)
@@ -69,32 +69,79 @@ namespace FormBuilderAPI.Controllers
             return CreatedAtAction(nameof(GetFormById), new { id = newFormId }, new { id = newFormId });
         }
 
-        // ✅ PUT - Update form (title, description, layout)
-        [HttpPut("{id:length(24)}")]
+
+        // ✅ PUT - Update Form Config
+        [HttpPut("formconfig/{id:length(24)}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateForm(string id, [FromBody] FormDTO formDto)
+        public async Task<IActionResult> UpdateFormConfig(string id, [FromBody] FormConfigDTO configDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await _formBL.UpdateFormAsync(id, formDto);
-            if (!updated)
-                return BadRequest(new { message = "Cannot edit a published form or form not found." });
+            try
+            {
+                var updated = await _formBL.UpdateFormConfigAsync(id, configDto);
+                if (!updated)
+                    return NotFound(new { message = "Form not found." });
 
-            return Ok(new { message = "Form updated successfully." });
+                return Ok(new { message = "Form configuration updated successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        // ✅ DELETE - Delete form
-        [HttpDelete("{id:length(24)}")]
+        // ✅ POST - Create Form Layout
+        [HttpPost("formlayout/{formId:length(24)}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteForm(string id)
+        public async Task<IActionResult> CreateFormLayout(string formId, [FromBody] FormLayoutDTO layoutDto)
         {
-            var deleted = await _formBL.DeleteFormAsync(id);
-            if (!deleted)
-                return NotFound(new { message = "Form not found." });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return Ok(new { message = "Form deleted successfully." });
+            try
+            {
+                var created = await _formBL.CreateFormLayoutAsync(formId, layoutDto);
+                if (!created)
+                    return BadRequest(new { message = "Form layout creation failed." });
+
+                return Ok(new { message = "Form layout created successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return NotFound(new { message = "Form not found." });
+            }
         }
+
+
+
+        // ✅ PUT - Update Form Layout
+        [HttpPut("formlayout/{formId:length(24)}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateFormLayout(string formId, [FromBody] FormLayoutDTO layoutDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var updated = await _formBL.UpdateFormLayoutAsync(formId, layoutDto);
+                if (!updated)
+                    return NotFound(new { message = "Form not found." });
+
+                return Ok(new { message = "Form layout updated successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
 
         // ✅ PUT - Publish form
         [HttpPut("{id:length(24)}/publish")]
@@ -114,6 +161,19 @@ namespace FormBuilderAPI.Controllers
             {
                 return NotFound(new { message = "Form not found." });
             }
+        }
+
+
+         // ✅ DELETE - Delete form
+        [HttpDelete("{id:length(24)}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteForm(string id)
+        {
+            var deleted = await _formBL.DeleteFormAsync(id);
+            if (!deleted)
+                return NotFound(new { message = "Form not found." });
+
+            return Ok(new { message = "Form deleted successfully." });
         }
     }
 }

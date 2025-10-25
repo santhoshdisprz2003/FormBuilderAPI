@@ -67,7 +67,7 @@ namespace FormBuilderAPI.BusinessLogicLayer
                     Title = dto.Title,
                     Description = dto.Description
                 },
-                Layout = new FormLayout(), // Empty layout initially
+                Layout = new FormLayout(), // empty initially
                 Status = MongoFormStatus.Draft,
                 CreatedBy = createdBy,
                 CreatedAt = DateTime.UtcNow
@@ -77,7 +77,8 @@ namespace FormBuilderAPI.BusinessLogicLayer
             return form.Id;
         }
 
-        public async Task<bool> UpdateFormAsync(string id, FormDTO dto)
+
+        public async Task<bool> UpdateFormConfigAsync(string id, FormConfigDTO dto)
         {
             var existing = await _forms.Find(f => f.Id == id).FirstOrDefaultAsync();
             if (existing == null)
@@ -86,16 +87,34 @@ namespace FormBuilderAPI.BusinessLogicLayer
             if (existing.Status == MongoFormStatus.Published)
                 throw new InvalidOperationException("Cannot edit a published form.");
 
-            // Build Layout object (from CreateFormLayoutAsync logic)
-            var updatedLayout = new FormLayout
+            var update = Builders<Form>.Update
+                .Set(f => f.Config.Title, dto.Title)
+                .Set(f => f.Config.Description, dto.Description)
+                .Set(f => f.UpdatedAt, DateTime.UtcNow);
+
+            var result = await _forms.UpdateOneAsync(f => f.Id == id, update);
+            return result.ModifiedCount > 0;
+        }
+
+
+
+        public async Task<bool> CreateFormLayoutAsync(string formId, FormLayoutDTO dto)
+        {
+            var existing = await _forms.Find(f => f.Id == formId).FirstOrDefaultAsync();
+            if (existing == null)
+                throw new Exception("Form not found.");
+
+            if (existing.Status == MongoFormStatus.Published)
+                throw new InvalidOperationException("Cannot add layout to a published form.");
+
+            var layout = new FormLayout
             {
                 HeaderCard = new FormHeaderCard
                 {
-                    Title = dto.Layout.HeaderCard.Title,
-                    Description = dto.Layout.HeaderCard.Description
-                    // MongoDB generates _id automatically
+                    Title = dto.HeaderCard.Title,
+                    Description = dto.HeaderCard.Description
                 },
-                Fields = dto.Layout.Fields?.Select(f => new FormField
+                Fields = dto.Fields?.Select(f => new FormField
                 {
                     Label = f.Label,
                     Type = f.Type,
@@ -106,23 +125,61 @@ namespace FormBuilderAPI.BusinessLogicLayer
                     Options = f.Options?.Select(o => new FieldOption
                     {
                         Value = o.Value
-                        // OptionId auto-generated
                     }).ToList() ?? new List<FieldOption>(),
                     Format = f.Format,
                     Required = f.Required,
                     Order = f.Order
-                    // QuestionId auto-generated
                 }).ToList() ?? new List<FormField>()
             };
 
-            // Build update definition (combine Config + Layout updates)
             var update = Builders<Form>.Update
-                .Set(f => f.Config.Title, dto.Config.Title)
-                .Set(f => f.Config.Description, dto.Config.Description)
+                .Set(f => f.Layout, layout)
+                .Set(f => f.UpdatedAt, DateTime.UtcNow);
+
+            var result = await _forms.UpdateOneAsync(f => f.Id == formId, update);
+            return result.ModifiedCount > 0;
+        }
+
+
+        public async Task<bool> UpdateFormLayoutAsync(string formId, FormLayoutDTO dto)
+        {
+            var existing = await _forms.Find(f => f.Id == formId).FirstOrDefaultAsync();
+            if (existing == null)
+                throw new Exception("Form not found.");
+
+            if (existing.Status == MongoFormStatus.Published)
+                throw new InvalidOperationException("Cannot edit a published form.");
+
+            var updatedLayout = new FormLayout
+            {
+                HeaderCard = new FormHeaderCard
+                {
+                    Title = dto.HeaderCard.Title,
+                    Description = dto.HeaderCard.Description
+                },
+                Fields = dto.Fields?.Select(f => new FormField
+                {
+                    Label = f.Label,
+                    Type = f.Type,
+                    DescriptionEnabled = f.DescriptionEnabled,
+                    Description = f.Description,
+                    SingleChoice = f.SingleChoice,
+                    MultipleChoice = f.MultipleChoice,
+                    Options = f.Options?.Select(o => new FieldOption
+                    {
+                        Value = o.Value
+                    }).ToList() ?? new List<FieldOption>(),
+                    Format = f.Format,
+                    Required = f.Required,
+                    Order = f.Order
+                }).ToList() ?? new List<FormField>()
+            };
+
+            var update = Builders<Form>.Update
                 .Set(f => f.Layout, updatedLayout)
                 .Set(f => f.UpdatedAt, DateTime.UtcNow);
 
-            var result = await _forms.UpdateOneAsync(f => f.Id == id, update);
+            var result = await _forms.UpdateOneAsync(f => f.Id == formId, update);
             return result.ModifiedCount > 0;
         }
 

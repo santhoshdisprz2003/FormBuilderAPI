@@ -8,7 +8,7 @@ using FormBuilderAPI.BusinessLogicLayer;
 namespace FormBuilderAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthBL _authBL;
@@ -22,6 +22,7 @@ namespace FormBuilderAPI.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] AuthDTO authDto)
         {
+           // Console.Write("Hello");
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -29,6 +30,7 @@ namespace FormBuilderAPI.Controllers
             if (authResult == null)
                 return Unauthorized(new { message = "Invalid username or password." });
 
+            //Console.Write("End");
             return Ok(new
             {
                 message = "Login successful.",

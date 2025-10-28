@@ -47,7 +47,13 @@ namespace FormBuilderAPITests.BusinessLogicTest
                     Id = "1", 
                     Status = MongoFormStatus.Draft,
                     Config = new FormConfig { Title = "Draft Form", Description = "Draft Description" },
-                    Layout = new FormLayout()
+                    Layout = new FormLayout
+                    {
+                        HeaderCard = new FormHeaderCard { Title = "Draft Header" },
+                        Fields = new List<FormField>()
+                    },
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "admin"
                 });
                 
                 _forms.Add(new Form 
@@ -55,16 +61,52 @@ namespace FormBuilderAPITests.BusinessLogicTest
                     Id = "2", 
                     Status = MongoFormStatus.Published,
                     Config = new FormConfig { Title = "Published Form", Description = "Published Description" },
-                    Layout = new FormLayout()
+                    Layout = new FormLayout
+                    {
+                        HeaderCard = new FormHeaderCard { Title = "Published Header" },
+                        Fields = new List<FormField>()
+                    },
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "admin",
+                    PublishedAt = DateTime.UtcNow
+                });
+
+                _forms.Add(new Form 
+                { 
+                    Id = "3", 
+                    Status = MongoFormStatus.Draft,
+                    Config = new FormConfig { Title = "Another Draft", Description = "Another Description" },
+                    Layout = new FormLayout
+                    {
+                        HeaderCard = new FormHeaderCard { Title = "Another Header" },
+                        Fields = new List<FormField>()
+                    },
+                    CreatedAt = DateTime.UtcNow.AddDays(-1),
+                    CreatedBy = "admin"
                 });
             }
 
-            public Task<IEnumerable<Form>> GetAllFormsAsync(string userRole)
+            public Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit)
             {
-                if (userRole == "Admin")
-                    return Task.FromResult<IEnumerable<Form>>(_forms);
+                IEnumerable<Form> filteredForms;
 
-                return Task.FromResult<IEnumerable<Form>>(_forms.Where(f => f.Status == MongoFormStatus.Published));
+                if (userRole == "Admin")
+                {
+                    filteredForms = _forms;
+                }
+                else
+                {
+                    filteredForms = _forms.Where(f => f.Status == MongoFormStatus.Published);
+                }
+
+                var totalCount = filteredForms.Count();
+                var paginatedForms = filteredForms
+                    .OrderByDescending(f => f.CreatedAt)
+                    .Skip(offset)
+                    .Take(limit)
+                    .ToList();
+
+                return Task.FromResult<(IEnumerable<Form>, long)>((paginatedForms, totalCount));
             }
 
             public Task<Form?> GetFormByIdAsync(string id, string userRole)
@@ -100,11 +142,30 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 return Task.FromResult(form.Id);
             }
 
+            public Task<bool> UpdateFormConfigAsync(string id, FormConfigDTO dto)
+            {
+                var existing = _forms.FirstOrDefault(f => f.Id == id);
+                if (existing == null)
+                    throw new Exception("Form not found.");
+
+                if (existing.Status == MongoFormStatus.Published)
+                    throw new InvalidOperationException("Cannot edit a published form.");
+
+                existing.Config.Title = dto.Title;
+                existing.Config.Description = dto.Description;
+                existing.UpdatedAt = DateTime.UtcNow;
+
+                return Task.FromResult(true);
+            }
+
             public Task<bool> CreateFormLayoutAsync(string formId, FormLayoutDTO layoutDto)
             {
                 var existingForm = _forms.FirstOrDefault(f => f.Id == formId);
                 if (existingForm == null)
                     throw new Exception("Form not found.");
+
+                if (existingForm.Status == MongoFormStatus.Published)
+                    throw new InvalidOperationException("Cannot add layout to a published form.");
 
                 // Map DTO to layout
                 var layout = new FormLayout
@@ -133,25 +194,27 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 };
 
                 existingForm.Layout = layout;
+                existingForm.UpdatedAt = DateTime.UtcNow;
                 return Task.FromResult(true);
             }
 
-            public Task<bool> UpdateFormAsync(string id, FormDTO dto)
+            public Task<bool> UpdateFormLayoutAsync(string formId, FormLayoutDTO dto)
             {
-                var existing = _forms.FirstOrDefault(f => f.Id == id);
-                if (existing == null || existing.Status == MongoFormStatus.Published)
-                    return Task.FromResult(false);
+                var existing = _forms.FirstOrDefault(f => f.Id == formId);
+                if (existing == null)
+                    throw new Exception("Form not found.");
 
-                existing.Config.Title = dto.Config.Title;
-                existing.Config.Description = dto.Config.Description;
-                existing.Layout = new FormLayout
+                if (existing.Status == MongoFormStatus.Published)
+                    throw new InvalidOperationException("Cannot edit a published form.");
+
+                var updatedLayout = new FormLayout
                 {
                     HeaderCard = new FormHeaderCard
                     {
-                        Title = dto.Layout.HeaderCard.Title,
-                        Description = dto.Layout.HeaderCard.Description
+                        Title = dto.HeaderCard.Title,
+                        Description = dto.HeaderCard.Description
                     },
-                    Fields = dto.Layout.Fields.Select(f => new FormField
+                    Fields = dto.Fields?.Select(f => new FormField
                     {
                         Label = f.Label,
                         Type = f.Type,
@@ -159,15 +222,17 @@ namespace FormBuilderAPITests.BusinessLogicTest
                         Description = f.Description,
                         SingleChoice = f.SingleChoice,
                         MultipleChoice = f.MultipleChoice,
-                        Options = f.Options.Select(o => new FieldOption
+                        Options = f.Options?.Select(o => new FieldOption
                         {
                             Value = o.Value
-                        }).ToList(),
+                        }).ToList() ?? new List<FieldOption>(),
                         Format = f.Format,
                         Required = f.Required,
                         Order = f.Order
-                    }).ToList()
+                    }).ToList() ?? new List<FormField>()
                 };
+
+                existing.Layout = updatedLayout;
                 existing.UpdatedAt = DateTime.UtcNow;
 
                 return Task.FromResult(true);
@@ -222,23 +287,61 @@ namespace FormBuilderAPITests.BusinessLogicTest
         public async Task GetAllFormsAsync_AdminRole_ReturnsAllForms()
         {
             // Act
-            var result = await _formBL.GetAllFormsAsync("Admin");
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 10);
 
             // Assert
-            Assert.Equal(2, result.Count());
-            Assert.Contains(result, f => f.Id == "1");
-            Assert.Contains(result, f => f.Id == "2");
+            Assert.Equal(3, totalCount);
+            Assert.Equal(3, forms.Count());
+            Assert.Contains(forms, f => f.Id == "1");
+            Assert.Contains(forms, f => f.Id == "2");
+            Assert.Contains(forms, f => f.Id == "3");
         }
 
         [Fact]
         public async Task GetAllFormsAsync_LearnerRole_ReturnsOnlyPublishedForms()
         {
             // Act
-            var result = await _formBL.GetAllFormsAsync("Learner");
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Learner", 0, 10);
 
             // Assert
-            Assert.Single(result);
-            Assert.Equal("2", result.First().Id);
+            Assert.Equal(1, totalCount);
+            Assert.Single(forms);
+            Assert.Equal("2", forms.First().Id);
+            Assert.Equal(MongoFormStatus.Published, forms.First().Status);
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_WithPagination_ReturnsCorrectPage()
+        {
+            // Act - Get first page with limit 2
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 2);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(2, forms.Count());
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_WithOffset_ReturnsCorrectPage()
+        {
+            // Act - Get second page with offset 1 and limit 2
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 2);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(2, forms.Count());
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_OrderedByCreatedAt_ReturnsDescendingOrder()
+        {
+            // Act
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 10);
+
+            // Assert
+            var formsList = forms.ToList();
+            Assert.True(formsList[0].CreatedAt >= formsList[1].CreatedAt);
+            Assert.True(formsList[1].CreatedAt >= formsList[2].CreatedAt);
         }
 
         #endregion
@@ -265,6 +368,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
             // Assert
             Assert.NotNull(result);
             Assert.Equal("2", result.Id);
+            Assert.Equal(MongoFormStatus.Published, result.Status);
         }
 
         [Fact]
@@ -272,6 +376,16 @@ namespace FormBuilderAPITests.BusinessLogicTest
         {
             // Act
             var result = await _formBL.GetFormByIdAsync("1", "Learner");
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetFormByIdAsync_NonExistentForm_ReturnsNull()
+        {
+            // Act
+            var result = await _formBL.GetFormByIdAsync("999", "Admin");
 
             // Assert
             Assert.Null(result);
@@ -300,6 +414,102 @@ namespace FormBuilderAPITests.BusinessLogicTest
             Assert.NotEqual("", result);
         }
 
+        [Fact]
+        public async Task CreateFormConfigAsync_CreatesFormWithDraftStatus()
+        {
+            // Arrange
+            var dto = new FormConfigDTO
+            {
+                Title = "New Form",
+                Description = "New Description"
+            };
+            var createdBy = "admin";
+
+            // Act
+            var formId = await _formBL.CreateFormConfigAsync(dto, createdBy);
+            var createdForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+
+            // Assert
+            Assert.NotNull(createdForm);
+            Assert.Equal(MongoFormStatus.Draft, createdForm.Status);
+            Assert.Equal("New Form", createdForm.Config.Title);
+            Assert.Equal("New Description", createdForm.Config.Description);
+        }
+
+        #endregion
+
+        #region UpdateFormConfigAsync Tests
+
+        [Fact]
+        public async Task UpdateFormConfigAsync_ValidDto_ReturnsTrue()
+        {
+            // Arrange
+            var formId = "1"; // Draft form
+            var dto = new FormConfigDTO
+            {
+                Title = "Updated Title",
+                Description = "Updated Description"
+            };
+
+            // Act
+            var result = await _formBL.UpdateFormConfigAsync(formId, dto);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task UpdateFormConfigAsync_UpdatesFormConfig()
+        {
+            // Arrange
+            var formId = "1";
+            var dto = new FormConfigDTO
+            {
+                Title = "Updated Title",
+                Description = "Updated Description"
+            };
+
+            // Act
+            await _formBL.UpdateFormConfigAsync(formId, dto);
+            var updatedForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+
+            // Assert
+            Assert.NotNull(updatedForm);
+            Assert.Equal("Updated Title", updatedForm.Config.Title);
+            Assert.Equal("Updated Description", updatedForm.Config.Description);
+            Assert.NotNull(updatedForm.UpdatedAt);
+        }
+
+        [Fact]
+        public async Task UpdateFormConfigAsync_FormNotFound_ThrowsException()
+        {
+            // Arrange
+            var formId = "nonexistent";
+            var dto = new FormConfigDTO
+            {
+                Title = "Updated Title"
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _formBL.UpdateFormConfigAsync(formId, dto));
+        }
+
+        [Fact]
+        public async Task UpdateFormConfigAsync_PublishedForm_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var formId = "2"; // Published form
+            var dto = new FormConfigDTO
+            {
+                Title = "Updated Title"
+            };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _formBL.UpdateFormConfigAsync(formId, dto));
+            Assert.Equal("Cannot edit a published form.", exception.Message);
+        }
+
         #endregion
 
         #region CreateFormLayoutAsync Tests
@@ -308,7 +518,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
         public async Task CreateFormLayoutAsync_ValidDto_ReturnsTrue()
         {
             // Arrange
-            var formId = "1"; // Use existing form ID
+            var formId = "1"; // Use existing draft form ID
             var layoutDto = new FormLayoutDTO
             {
                 HeaderCard = new FormHeaderCardDTO
@@ -337,6 +547,43 @@ namespace FormBuilderAPITests.BusinessLogicTest
         }
 
         [Fact]
+        public async Task CreateFormLayoutAsync_UpdatesFormLayout()
+        {
+            // Arrange
+            var formId = "1";
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "New Header",
+                    Description = "New Description"
+                },
+                Fields = new List<FormFieldDTO>
+                {
+                    new FormFieldDTO
+                    {
+                        Label = "Question 1",
+                        Type = "text",
+                        Required = true,
+                        Order = 1,
+                        Options = new List<FieldOptionDTO>()
+                    }
+                }
+            };
+
+            // Act
+            await _formBL.CreateFormLayoutAsync(formId, layoutDto);
+            var updatedForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+
+            // Assert
+            Assert.NotNull(updatedForm);
+            Assert.NotNull(updatedForm.Layout);
+            Assert.Equal("New Header", updatedForm.Layout.HeaderCard.Title);
+            Assert.Single(updatedForm.Layout.Fields);
+            Assert.Equal("Question 1", updatedForm.Layout.Fields[0].Label);
+        }
+
+        [Fact]
         public async Task CreateFormLayoutAsync_FormNotFound_ThrowsException()
         {
             // Arrange
@@ -352,6 +599,272 @@ namespace FormBuilderAPITests.BusinessLogicTest
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(() => _formBL.CreateFormLayoutAsync(formId, layoutDto));
+        }
+
+        [Fact]
+        public async Task CreateFormLayoutAsync_PublishedForm_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var formId = "2"; // Published form
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Header Title"
+                },
+                Fields = new List<FormFieldDTO>()
+            };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _formBL.CreateFormLayoutAsync(formId, layoutDto));
+            Assert.Equal("Cannot add layout to a published form.", exception.Message);
+        }
+
+        #endregion
+
+        #region UpdateFormLayoutAsync Tests
+
+        [Fact]
+        public async Task UpdateFormLayoutAsync_ValidDto_ReturnsTrue()
+        {
+            // Arrange
+            var formId = "1"; // Draft form
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Updated Header",
+                    Description = "Updated Description"
+                },
+                Fields = new List<FormFieldDTO>
+                {
+                    new FormFieldDTO
+                    {
+                        Label = "Updated Question",
+                        Type = "text",
+                        Required = true,
+                        Order = 1,
+                        Options = new List<FieldOptionDTO>()
+                    }
+                }
+            };
+
+            // Act
+            var result = await _formBL.UpdateFormLayoutAsync(formId, layoutDto);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task UpdateFormLayoutAsync_UpdatesFormLayout()
+        {
+            // Arrange
+            var formId = "1";
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Updated Header",
+                    Description = "Updated Description"
+                },
+                Fields = new List<FormFieldDTO>
+                {
+                    new FormFieldDTO
+                    {
+                        Label = "Updated Question",
+                        Type = "dropdown",
+                        Required = false,
+                        Order = 1,
+                        Options = new List<FieldOptionDTO>
+                        {
+                            new FieldOptionDTO { Value = "Option 1" },
+                            new FieldOptionDTO { Value = "Option 2" }
+                        }
+                    }
+                }
+            };
+
+            // Act
+            await _formBL.UpdateFormLayoutAsync(formId, layoutDto);
+            var updatedForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+
+            // Assert
+            Assert.NotNull(updatedForm);
+            Assert.NotNull(updatedForm.Layout);
+            Assert.Equal("Updated Header", updatedForm.Layout.HeaderCard.Title);
+            Assert.Single(updatedForm.Layout.Fields);
+            Assert.Equal("Updated Question", updatedForm.Layout.Fields[0].Label);
+            Assert.Equal("dropdown", updatedForm.Layout.Fields[0].Type);
+            Assert.Equal(2, updatedForm.Layout.Fields[0].Options.Count);
+        }
+
+        [Fact]
+        public async Task UpdateFormLayoutAsync_FormNotFound_ThrowsException()
+        {
+            // Arrange
+            var formId = "nonexistent";
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Updated Header"
+                },
+                Fields = new List<FormFieldDTO>()
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _formBL.UpdateFormLayoutAsync(formId, layoutDto));
+        }
+
+        [Fact]
+        public async Task UpdateFormLayoutAsync_PublishedForm_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var formId = "2"; // Published form
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Updated Header"
+                },
+                Fields = new List<FormFieldDTO>()
+            };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _formBL.UpdateFormLayoutAsync(formId, layoutDto));
+            Assert.Equal("Cannot edit a published form.", exception.Message);
+        }
+
+        #endregion
+
+        #region PublishFormAsync Tests
+
+        [Fact]
+        public async Task PublishFormAsync_DraftForm_PublishesSuccessfully()
+        {
+            // Arrange
+            var formId = "1"; // Draft form
+
+            // Act
+            var result = await _formBL.PublishFormAsync(formId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(MongoFormStatus.Published, result.Status);
+            Assert.NotNull(result.PublishedAt);
+        }
+
+        [Fact]
+        public async Task PublishFormAsync_AlreadyPublished_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var formId = "2"; // Already published form
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _formBL.PublishFormAsync(formId));
+            Assert.Equal("Form is already published.", exception.Message);
+        }
+
+        [Fact]
+        public async Task PublishFormAsync_FormNotFound_ThrowsException()
+        {
+            // Arrange
+            var formId = "nonexistent";
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _formBL.PublishFormAsync(formId));
+        }
+
+        #endregion
+
+        #region DeleteFormAsync Tests
+
+        [Fact]
+        public async Task DeleteFormAsync_ExistingForm_ReturnsTrue()
+        {
+            // Arrange
+            var formId = "1";
+
+            // Act
+            var result = await _formBL.DeleteFormAsync(formId);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DeleteFormAsync_RemovesFormFromList()
+        {
+            // Arrange
+            var formId = "1";
+
+            // Act
+            await _formBL.DeleteFormAsync(formId);
+            var deletedForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+
+            // Assert
+            Assert.Null(deletedForm);
+        }
+
+        [Fact]
+        public async Task DeleteFormAsync_NonExistentForm_ReturnsFalse()
+        {
+            // Arrange
+            var formId = "nonexistent";
+
+            // Act
+            var result = await _formBL.DeleteFormAsync(formId);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task DeleteFormAsync_WithRelatedResponses_DeletesResponsesFirst()
+        {
+            // Arrange
+            var formId = "1";
+            
+            // Add some test responses to SQL database
+            var response = new FormBuilderAPI.Model.SQLModel.FormResponse
+            {
+                FormId = formId,
+                SubmittedBy = "user123",
+                SubmittedAt = DateTime.UtcNow
+            };
+            
+            _sqlContext.FormResponses.Add(response);
+            await _sqlContext.SaveChangesAsync();
+            
+            // Add answer separately after response is saved to get the ResponseId
+            var answer = new FormBuilderAPI.Model.SQLModel.FormResponseAnswer
+            {
+                ResponseId = response.ResponseId,
+                QuestionId = "q1",
+                AnswerText = "Test Answer"
+            };
+            
+            _sqlContext.FormResponseAnswers.Add(answer);
+            await _sqlContext.SaveChangesAsync();
+
+            // Act
+            var result = await _formBL.DeleteFormAsync(formId);
+
+            // Assert
+            Assert.True(result);
+            var remainingResponses = await _sqlContext.FormResponses
+                .Where(r => r.FormId == formId)
+                .ToListAsync();
+            Assert.Empty(remainingResponses);
+            
+            var remainingAnswers = await _sqlContext.FormResponseAnswers
+                .Where(a => a.ResponseId == response.ResponseId)
+                .ToListAsync();
+            Assert.Empty(remainingAnswers);
         }
 
         #endregion

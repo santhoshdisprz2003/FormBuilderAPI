@@ -44,13 +44,21 @@ namespace FormBuilderAPI.Controllers
         [HttpGet("{id:length(24)}")]
         public async Task<IActionResult> GetFormById(string id)
         {
+            //  Console.WriteLine($"🔍 Fetching form for ID: {id}");
             var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
+            // Console.WriteLine($"👤 Role: {userRole}");
+
             var form = await _formBL.GetFormByIdAsync(id, userRole);
 
             if (form == null)
+            {
+                Console.WriteLine("❌ Form not found or not accessible.");
                 return NotFound(new { message = "Form not found or not accessible." });
+            }
 
+            Console.WriteLine($"✅ Form fetched successfully: {System.Text.Json.JsonSerializer.Serialize(form)}");
             return Ok(form);
+
         }
 
         // ✅ POST - Create Form Config
@@ -164,7 +172,7 @@ namespace FormBuilderAPI.Controllers
         }
 
 
-         // ✅ DELETE - Delete form
+        // ✅ DELETE - Delete form
         [HttpDelete("{id:length(24)}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteForm(string id)

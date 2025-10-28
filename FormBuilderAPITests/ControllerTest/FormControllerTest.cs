@@ -31,7 +31,7 @@ namespace FormBuilderAPITests.ControllerTest
         #region GetAllForms Tests
 
         [Fact]
-        public async Task GetAllForms_AsAdmin_ReturnsAllForms()
+        public async Task GetAllForms_AsAdmin_ReturnsAllFormsWithPagination()
         {
             // Arrange
             var expectedForms = new List<Form>
@@ -50,23 +50,38 @@ namespace FormBuilderAPITests.ControllerTest
                 }
             };
 
+            int offset = 0;
+            int limit = 10;
+            int totalCount = 2;
+
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
 
-            _mockFormBL.Setup(bl => bl.GetAllFormsAsync("Admin"))
-                .ReturnsAsync(expectedForms);
+            _mockFormBL.Setup(bl => bl.GetAllFormsAsync("Admin", offset, limit))
+                .ReturnsAsync((expectedForms, totalCount));
 
             // Act
-            var result = await _controller.GetAllForms();
+            var result = await _controller.GetAllForms(offset, limit);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnedForms = Assert.IsAssignableFrom<IEnumerable<Form>>(okResult.Value);
-            Assert.Equal(expectedForms.Count, returnedForms.Count());
-            Assert.Equal(expectedForms[0].Id, returnedForms.First().Id);
+            var resultDict = JObject.FromObject(okResult.Value);
+            
+            Assert.True(resultDict.ContainsKey("TotalCount"));
+            Assert.True(resultDict.ContainsKey("Offset"));
+            Assert.True(resultDict.ContainsKey("Limit"));
+            Assert.True(resultDict.ContainsKey("Data"));
+            
+            Assert.Equal(totalCount, resultDict["TotalCount"].Value<int>());
+            Assert.Equal(offset, resultDict["Offset"].Value<int>());
+            Assert.Equal(limit, resultDict["Limit"].Value<int>());
+            
+            var returnedForms = resultDict["Data"].ToObject<List<Form>>();
+            Assert.Equal(expectedForms.Count, returnedForms.Count);
+            Assert.Equal(expectedForms[0].Id, returnedForms[0].Id);
         }
 
         [Fact]
-        public async Task GetAllForms_AsLearner_ReturnsPublishedForms()
+        public async Task GetAllForms_AsLearner_ReturnsPublishedFormsWithPagination()
         {
             // Arrange
             var expectedForms = new List<Form>
@@ -79,19 +94,64 @@ namespace FormBuilderAPITests.ControllerTest
                 }
             };
 
+            int offset = 0;
+            int limit = 10;
+            int totalCount = 1;
+
             SetupUserIdentity(_controller, "learner123", new[] { "Learner" });
 
-            _mockFormBL.Setup(bl => bl.GetAllFormsAsync("Learner"))
-                .ReturnsAsync(expectedForms);
+            _mockFormBL.Setup(bl => bl.GetAllFormsAsync("Learner", offset, limit))
+                .ReturnsAsync((expectedForms, totalCount));
 
             // Act
-            var result = await _controller.GetAllForms();
+            var result = await _controller.GetAllForms(offset, limit);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnedForms = Assert.IsAssignableFrom<IEnumerable<Form>>(okResult.Value);
+            var resultDict = JObject.FromObject(okResult.Value);
+            
+            Assert.Equal(totalCount, resultDict["TotalCount"].Value<int>());
+            Assert.Equal(offset, resultDict["Offset"].Value<int>());
+            Assert.Equal(limit, resultDict["Limit"].Value<int>());
+            
+            var returnedForms = resultDict["Data"].ToObject<List<Form>>();
             Assert.Single(returnedForms);
-            Assert.Equal(expectedForms[0].Id, returnedForms.First().Id);
+            Assert.Equal(expectedForms[0].Id, returnedForms[0].Id);
+        }
+
+        [Fact]
+        public async Task GetAllForms_WithCustomPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            var expectedForms = new List<Form>
+            {
+                new Form
+                {
+                    Id = "form3",
+                    Config = new FormConfig { Title = "Form 3" },
+                    Status = MongoFormStatus.Published
+                }
+            };
+
+            int offset = 2;
+            int limit = 1;
+            int totalCount = 5;
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.GetAllFormsAsync("Admin", offset, limit))
+                .ReturnsAsync((expectedForms, totalCount));
+
+            // Act
+            var result = await _controller.GetAllForms(offset, limit);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var resultDict = JObject.FromObject(okResult.Value);
+            
+            Assert.Equal(totalCount, resultDict["TotalCount"].Value<int>());
+            Assert.Equal(offset, resultDict["Offset"].Value<int>());
+            Assert.Equal(limit, resultDict["Limit"].Value<int>());
         }
 
         #endregion
@@ -202,10 +262,114 @@ namespace FormBuilderAPITests.ControllerTest
 
         #endregion
 
+        #region UpdateFormConfig Tests
+
+        [Fact]
+        public async Task UpdateFormConfig_ValidConfig_ReturnsOk()
+        {
+            // Arrange
+            const string formId = "form123";
+            var configDto = new FormConfigDTO
+            {
+                Title = "Updated Form",
+                Description = "Updated Description"
+            };
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.UpdateFormConfigAsync(formId, configDto))
+                .ReturnsAsync(true);
+
+            // Act
+            var result = await _controller.UpdateFormConfig(formId, configDto);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+            
+            var resultDict = JObject.FromObject(okResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Form configuration updated successfully.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task UpdateFormConfig_FormNotFound_ReturnsNotFound()
+        {
+            // Arrange
+            const string formId = "nonexistentform";
+            var configDto = new FormConfigDTO
+            {
+                Title = "Updated Form"
+            };
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.UpdateFormConfigAsync(formId, configDto))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _controller.UpdateFormConfig(formId, configDto);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.NotNull(notFoundResult.Value);
+            
+            var resultDict = JObject.FromObject(notFoundResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Form not found.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task UpdateFormConfig_PublishedForm_ReturnsBadRequest()
+        {
+            // Arrange
+            const string formId = "form123";
+            var configDto = new FormConfigDTO
+            {
+                Title = "Updated Form"
+            };
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.UpdateFormConfigAsync(formId, configDto))
+                .ThrowsAsync(new InvalidOperationException("Cannot update a published form."));
+
+            // Act
+            var result = await _controller.UpdateFormConfig(formId, configDto);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+            
+            var resultDict = JObject.FromObject(badRequestResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Cannot update a published form.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task UpdateFormConfig_InvalidModel_ReturnsBadRequest()
+        {
+            // Arrange
+            const string formId = "form123";
+            var configDto = new FormConfigDTO();
+            
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+            
+            _controller.ModelState.AddModelError("Title", "Title is required");
+
+            // Act
+            var result = await _controller.UpdateFormConfig(formId, configDto);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        #endregion
+
         #region CreateFormLayout Tests
 
         [Fact]
-        public async Task CreateFormLayout_ValidLayout_ReturnsNoContent()
+        public async Task CreateFormLayout_ValidLayout_ReturnsOk()
         {
             // Arrange
             const string formId = "form123";
@@ -237,7 +401,12 @@ namespace FormBuilderAPITests.ControllerTest
             var result = await _controller.CreateFormLayout(formId, layoutDto);
 
             // Assert
-            Assert.IsType<NoContentResult>(result);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+            
+            var resultDict = JObject.FromObject(okResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Form layout created successfully.", resultDict["message"].Value<string>());
         }
 
         [Fact]
@@ -256,7 +425,7 @@ namespace FormBuilderAPITests.ControllerTest
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
 
             _mockFormBL.Setup(bl => bl.CreateFormLayoutAsync(formId, layoutDto))
-                .ReturnsAsync(false);
+                .ThrowsAsync(new Exception("Form not found"));
 
             // Act
             var result = await _controller.CreateFormLayout(formId, layoutDto);
@@ -267,7 +436,37 @@ namespace FormBuilderAPITests.ControllerTest
             
             var resultDict = JObject.FromObject(notFoundResult.Value);
             Assert.True(resultDict.ContainsKey("message"));
-            Assert.Equal("Form not found or layout not updated.", resultDict["message"].Value<string>());
+            Assert.Equal("Form not found.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task CreateFormLayout_CreationFailed_ReturnsBadRequest()
+        {
+            // Arrange
+            const string formId = "form123";
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Form Header"
+                }
+            };
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.CreateFormLayoutAsync(formId, layoutDto))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _controller.CreateFormLayout(formId, layoutDto);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+            
+            var resultDict = JObject.FromObject(badRequestResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Form layout creation failed.", resultDict["message"].Value<string>());
         }
 
         [Fact]
@@ -289,7 +488,7 @@ namespace FormBuilderAPITests.ControllerTest
         }
 
         [Fact]
-        public async Task CreateFormLayout_ExceptionThrown_ReturnsBadRequest()
+        public async Task CreateFormLayout_InvalidOperation_ReturnsBadRequest()
         {
             // Arrange
             const string formId = "form123";
@@ -304,7 +503,7 @@ namespace FormBuilderAPITests.ControllerTest
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
 
             _mockFormBL.Setup(bl => bl.CreateFormLayoutAsync(formId, layoutDto))
-                .ThrowsAsync(new Exception("Layout validation failed"));
+                .ThrowsAsync(new InvalidOperationException("Layout validation failed"));
 
             // Act
             var result = await _controller.CreateFormLayout(formId, layoutDto);
@@ -320,31 +519,39 @@ namespace FormBuilderAPITests.ControllerTest
 
         #endregion
 
-        #region UpdateForm Tests
+        #region UpdateFormLayout Tests
 
         [Fact]
-        public async Task UpdateForm_ValidForm_ReturnsOk()
+        public async Task UpdateFormLayout_ValidLayout_ReturnsOk()
         {
             // Arrange
             const string formId = "form123";
-            var formDto = new FormDTO
+            var layoutDto = new FormLayoutDTO
             {
-                Id = formId,
-                Config = new FormConfigDTO { Title = "Updated Form" },
-                Layout = new FormLayoutDTO
+                HeaderCard = new FormHeaderCardDTO
                 {
-                    HeaderCard = new FormHeaderCardDTO { Title = "Updated Header" }
+                    Title = "Updated Header",
+                    Description = "Updated Description"
                 },
-                Status = DTOFormStatus.Draft
+                Fields = new List<FormFieldDTO>
+                {
+                    new FormFieldDTO
+                    {
+                        QuestionId = "q1",
+                        Label = "Updated Question",
+                        Type = "text",
+                        Required = true
+                    }
+                }
             };
 
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
 
-            _mockFormBL.Setup(bl => bl.UpdateFormAsync(formId, formDto))
+            _mockFormBL.Setup(bl => bl.UpdateFormLayoutAsync(formId, layoutDto))
                 .ReturnsAsync(true);
 
             // Act
-            var result = await _controller.UpdateForm(formId, formDto);
+            var result = await _controller.UpdateFormLayout(formId, layoutDto);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -352,31 +559,59 @@ namespace FormBuilderAPITests.ControllerTest
             
             var resultDict = JObject.FromObject(okResult.Value);
             Assert.True(resultDict.ContainsKey("message"));
-            Assert.Equal("Form updated successfully.", resultDict["message"].Value<string>());
+            Assert.Equal("Form layout updated successfully.", resultDict["message"].Value<string>());
         }
 
         [Fact]
-        public async Task UpdateForm_FormNotFound_ReturnsBadRequest()
+        public async Task UpdateFormLayout_FormNotFound_ReturnsNotFound()
         {
             // Arrange
             const string formId = "nonexistentform";
-            var formDto = new FormDTO
+            var layoutDto = new FormLayoutDTO
             {
-                Id = formId,
-                Config = new FormConfigDTO { Title = "Updated Form" },
-                Layout = new FormLayoutDTO
+                HeaderCard = new FormHeaderCardDTO
                 {
-                    HeaderCard = new FormHeaderCardDTO { Title = "Updated Header" }
+                    Title = "Updated Header"
                 }
             };
 
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
 
-            _mockFormBL.Setup(bl => bl.UpdateFormAsync(formId, formDto))
+            _mockFormBL.Setup(bl => bl.UpdateFormLayoutAsync(formId, layoutDto))
                 .ReturnsAsync(false);
 
             // Act
-            var result = await _controller.UpdateForm(formId, formDto);
+            var result = await _controller.UpdateFormLayout(formId, layoutDto);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.NotNull(notFoundResult.Value);
+            
+            var resultDict = JObject.FromObject(notFoundResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("Form not found.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task UpdateFormLayout_PublishedForm_ReturnsBadRequest()
+        {
+            // Arrange
+            const string formId = "form123";
+            var layoutDto = new FormLayoutDTO
+            {
+                HeaderCard = new FormHeaderCardDTO
+                {
+                    Title = "Updated Header"
+                }
+            };
+
+            SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
+
+            _mockFormBL.Setup(bl => bl.UpdateFormLayoutAsync(formId, layoutDto))
+                .ThrowsAsync(new InvalidOperationException("Cannot update layout of a published form."));
+
+            // Act
+            var result = await _controller.UpdateFormLayout(formId, layoutDto);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -384,22 +619,22 @@ namespace FormBuilderAPITests.ControllerTest
             
             var resultDict = JObject.FromObject(badRequestResult.Value);
             Assert.True(resultDict.ContainsKey("message"));
-            Assert.Equal("Cannot edit a published form or form not found.", resultDict["message"].Value<string>());
+            Assert.Equal("Cannot update layout of a published form.", resultDict["message"].Value<string>());
         }
 
         [Fact]
-        public async Task UpdateForm_InvalidModel_ReturnsBadRequest()
+        public async Task UpdateFormLayout_InvalidModel_ReturnsBadRequest()
         {
             // Arrange
             const string formId = "form123";
-            var formDto = new FormDTO(); // Missing required properties
+            var layoutDto = new FormLayoutDTO();
             
             SetupUserIdentity(_controller, "admin123", new[] { "Admin" });
             
-            _controller.ModelState.AddModelError("Config", "Config is required");
+            _controller.ModelState.AddModelError("HeaderCard", "HeaderCard is required");
 
             // Act
-            var result = await _controller.UpdateForm(formId, formDto);
+            var result = await _controller.UpdateFormLayout(formId, layoutDto);
 
             // Assert
             Assert.IsType<BadRequestObjectResult>(result);

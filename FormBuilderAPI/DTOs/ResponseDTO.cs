@@ -42,6 +42,8 @@ namespace FormBuilderAPI.DTOs
         public int ResponseId { get; set; }
         public string FormId { get; set; } = string.Empty;
         public string SubmittedBy { get; set; } = string.Empty;
+
+         public string? SubmittedUserName { get; set; } 
         public DateTime SubmittedAt { get; set; }
         public List<ResponseAnswerDTO> Answers { get; set; } = new();
         public List<ResponseFileDTO> Files { get; set; } = new();

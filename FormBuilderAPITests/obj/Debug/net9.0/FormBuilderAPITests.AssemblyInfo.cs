@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FormBuilderAPITests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76d6c3c006ee8f4cbf4931e08a83b4db508b1757")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+765b0bb9f695adc39a7dbeb8d872436388d35b3e")]
 [assembly: System.Reflection.AssemblyProductAttribute("FormBuilderAPITests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FormBuilderAPITests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

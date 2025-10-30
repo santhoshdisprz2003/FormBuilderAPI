@@ -7,6 +7,7 @@ using FormBuilderAPI.BusinessLogicLayer;
 using System.Security.Claims;
 using System.Linq;
 
+
 namespace FormBuilderAPI.Controllers
 {
     [ApiController]
@@ -56,7 +57,7 @@ namespace FormBuilderAPI.Controllers
                 return NotFound(new { message = "Form not found or not accessible." });
             }
 
-            Console.WriteLine($"✅ Form fetched successfully: {System.Text.Json.JsonSerializer.Serialize(form)}");
+            // Console.WriteLine($"✅ Form fetched successfully: {System.Text.Json.JsonSerializer.Serialize(form)}");
             return Ok(form);
 
         }

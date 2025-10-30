@@ -54,6 +54,7 @@ namespace FormBuilderAPI.Controllers
                 return Unauthorized(new { message = "User ID not found in token." });
 
             // 2️⃣ Fetch only this user's responses for the form
+
             var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
 
             // 3️⃣ If the user hasn’t submitted any response, show empty or 404
@@ -64,24 +65,47 @@ namespace FormBuilderAPI.Controllers
             return Ok(responses);
         }
 
+        [HttpGet("my-responses")]
+        [Authorize(Roles = "Learner")]
+        public async Task<IActionResult> GetAllResponsesByLearner()
+        {
+            // 1️⃣ Get logged-in user ID from JWT claims
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(new { message = "User ID not found in token." });
+
+            // 2️⃣ Fetch all responses submitted by this user across all forms
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // 3️⃣ If no responses found
+            if (responses == null || !responses.Any())
+                return NotFound(new { message = "No responses found for this user." });
+
+            // 4️⃣ Return all responses
+            return Ok(responses);
+        }
+
+
 
 
         [HttpGet("download-file/{responseId}/{fileId}")]
         [Authorize(Roles = "Admin")]
-public async Task<IActionResult> DownloadFile(int responseId, int fileId)
-{
-    // Fetch the file using responseId and fileId
-    var file = await _responseBL.GetFileByResponseIdAndFileIdAsync(responseId, fileId);
+        public async Task<IActionResult> DownloadFile(int responseId, int fileId)
+        {
+            // Fetch the file using responseId and fileId
+            var file = await _responseBL.GetFileByResponseIdAndFileIdAsync(responseId, fileId);
 
-    if (file == null)
-        return NotFound(new { message = "File not found for this response." });
+            if (file == null)
+                return NotFound(new { message = "File not found for this response." });
 
-    // Convert Base64 back to bytes
-    var fileBytes = Convert.FromBase64String(file.Base64Content);
+            // Convert Base64 back to bytes
+            var fileBytes = Convert.FromBase64String(file.Base64Content);
 
-    // Return as downloadable file
-    return File(fileBytes, file.FileType, file.FileName);
-}
+            // Return as downloadable file
+            return File(fileBytes, file.FileType, file.FileName);
+        }
 
 
     }

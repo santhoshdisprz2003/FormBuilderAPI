@@ -11,6 +11,8 @@ namespace FormBuilderAPI.BusinessLogicLayer
         Task<int> SubmitResponseAsync(ResponseDTO dto);
         Task<List<ResponseDetailDTO>> GetResponsesForUserAsync(string formId, string userId);
         Task<List<ResponseDetailDTO>> GetResponsesForFormAsync(string formId);
+          Task<List<ResponseDetailDTO>> GetAllResponsesByUserAsync(string userId);
+
 
 Task<ResponseFileDTO?> GetFileByResponseIdAndFileIdAsync(int responseId, int fileId);
 

@@ -275,6 +275,13 @@ paths:
       responses:
         '200':
           description: OK
+  /api/responses/my-responses:
+    get:
+      tags:
+        - Response
+      responses:
+        '200':
+          description: OK
   '/api/responses/download-file/{responseId}/{fileId}':
     get:
       tags:

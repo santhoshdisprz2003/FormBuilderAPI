@@ -41,6 +41,7 @@ namespace FormBuilderAPI.DTOs
     {
         public int ResponseId { get; set; }
         public string FormId { get; set; } = string.Empty;
+         public string? FormTitle { get; set; } 
         public string SubmittedBy { get; set; } = string.Empty;
 
          public string? SubmittedUserName { get; set; } 

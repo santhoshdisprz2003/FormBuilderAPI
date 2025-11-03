@@ -192,6 +192,178 @@ namespace FormBuilderAPITests.ControllerTest
 
         #endregion
 
+        #region GetAllResponsesByLearner Tests
+
+        [Fact]
+        public async Task GetAllResponsesByLearner_UserHasResponses_ReturnsOkWithAllResponses()
+        {
+            // Arrange
+            const string userId = "user123";
+            var expectedResponses = new List<ResponseDetailDTO>
+            {
+                new ResponseDetailDTO 
+                { 
+                    ResponseId = 1, 
+                    FormId = "form1",
+                    SubmittedBy = userId,
+                    Answers = new List<ResponseAnswerDTO>()
+                },
+                new ResponseDetailDTO 
+                { 
+                    ResponseId = 2, 
+                    FormId = "form2",
+                    SubmittedBy = userId,
+                    Answers = new List<ResponseAnswerDTO>()
+                }
+            };
+
+            SetupUserIdentity(_controller, userId);
+
+            _mockResponseBL.Setup(bl => bl.GetAllResponsesByUserAsync(userId))
+                .ReturnsAsync(expectedResponses);
+
+            // Act
+            var result = await _controller.GetAllResponsesByLearner();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedResponses = Assert.IsAssignableFrom<IEnumerable<ResponseDetailDTO>>(okResult.Value);
+            Assert.Equal(expectedResponses.Count, returnedResponses.Count());
+            Assert.Equal(expectedResponses[0].ResponseId, returnedResponses.First().ResponseId);
+            Assert.Equal(expectedResponses[1].ResponseId, returnedResponses.ElementAt(1).ResponseId);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByLearner_NoUserIdentity_ReturnsUnauthorized()
+        {
+            // Arrange
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            };
+
+            // Act
+            var result = await _controller.GetAllResponsesByLearner();
+
+            // Assert
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            
+            var resultDict = JObject.FromObject(unauthorizedResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("User ID not found in token.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByLearner_NoResponses_ReturnsNotFound()
+        {
+            // Arrange
+            const string userId = "user123";
+
+            SetupUserIdentity(_controller, userId);
+
+            _mockResponseBL.Setup(bl => bl.GetAllResponsesByUserAsync(userId))
+                .ReturnsAsync(new List<ResponseDetailDTO>());
+
+            // Act
+            var result = await _controller.GetAllResponsesByLearner();
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            
+            var resultDict = JObject.FromObject(notFoundResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("No responses found for this user.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByLearner_NullResponses_ReturnsNotFound()
+        {
+            // Arrange
+            const string userId = "user123";
+
+            SetupUserIdentity(_controller, userId);
+
+            _mockResponseBL.Setup(bl => bl.GetAllResponsesByUserAsync(userId))
+                .ReturnsAsync((List<ResponseDetailDTO>)null);
+
+            // Act
+            var result = await _controller.GetAllResponsesByLearner();
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            
+            var resultDict = JObject.FromObject(notFoundResult.Value);
+            Assert.True(resultDict.ContainsKey("message"));
+            Assert.Equal("No responses found for this user.", resultDict["message"].Value<string>());
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByLearner_MultipleFormsResponses_ReturnsAllResponses()
+        {
+            // Arrange
+            const string userId = "user123";
+            var expectedResponses = new List<ResponseDetailDTO>
+            {
+                new ResponseDetailDTO 
+                { 
+                    ResponseId = 1, 
+                    FormId = "form1",
+                    SubmittedBy = userId,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-2),
+                    Answers = new List<ResponseAnswerDTO>
+                    {
+                        new ResponseAnswerDTO { QuestionId = "q1", AnswerText = "answer1" }
+                    }
+                },
+                new ResponseDetailDTO 
+                { 
+                    ResponseId = 2, 
+                    FormId = "form2",
+                    SubmittedBy = userId,
+                    SubmittedAt = DateTime.UtcNow.AddDays(-1),
+                    Answers = new List<ResponseAnswerDTO>
+                    {
+                        new ResponseAnswerDTO { QuestionId = "q2", AnswerText = "answer2" }
+                    }
+                },
+                new ResponseDetailDTO 
+                { 
+                    ResponseId = 3, 
+                    FormId = "form1",
+                    SubmittedBy = userId,
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<ResponseAnswerDTO>
+                    {
+                        new ResponseAnswerDTO { QuestionId = "q1", AnswerText = "updated answer" }
+                    }
+                }
+            };
+
+            SetupUserIdentity(_controller, userId);
+
+            _mockResponseBL.Setup(bl => bl.GetAllResponsesByUserAsync(userId))
+                .ReturnsAsync(expectedResponses);
+
+            // Act
+            var result = await _controller.GetAllResponsesByLearner();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnedResponses = Assert.IsAssignableFrom<IEnumerable<ResponseDetailDTO>>(okResult.Value);
+            Assert.Equal(3, returnedResponses.Count());
+            
+            // Verify all response IDs are present
+            var responseIds = returnedResponses.Select(r => r.ResponseId).ToList();
+            Assert.Contains(1, responseIds);
+            Assert.Contains(2, responseIds);
+            Assert.Contains(3, responseIds);
+            
+            // Verify all responses belong to the same user
+            Assert.All(returnedResponses, r => Assert.Equal(userId, r.SubmittedBy));
+        }
+
+        #endregion
+
         #region DownloadFile Tests
 
         [Fact]

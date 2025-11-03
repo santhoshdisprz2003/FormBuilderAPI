@@ -50,7 +50,6 @@ namespace FormBuilderAPI.Controllers
             // Console.WriteLine($"👤 Role: {userRole}");
 
             var form = await _formBL.GetFormByIdAsync(id, userRole);
-
             if (form == null)
             {
                 Console.WriteLine("❌ Form not found or not accessible.");

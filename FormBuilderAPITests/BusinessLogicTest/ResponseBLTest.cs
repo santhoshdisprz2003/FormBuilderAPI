@@ -95,10 +95,41 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 }
             };
 
-            // Setup the mock to return our form when GetFormByIdAsync is called
-            _mockFormBL.Setup(m => m.GetFormByIdAsync(It.IsAny<string>(), It.IsAny<string>()))
+            var form2 = new Form
+            {
+                Id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                Config = new FormConfig
+                {
+                    Title = "Second Test Form",
+                    Description = "Second Form Description"
+                },
+                Layout = new FormLayout
+                {
+                    Fields = new List<FormField>
+                    {
+                        new FormField
+                        {
+                            QuestionId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                            Label = "Text Question",
+                            Type = "text"
+                        }
+                    }
+                }
+            };
+
+            // Setup the mock to return our forms when GetFormByIdAsync is called
+            _mockFormBL.Setup(m => m.GetFormByIdAsync("11111111-1111-1111-1111-111111111111", It.IsAny<string>()))
                 .Returns(Task.FromResult(form));
+            
+            _mockFormBL.Setup(m => m.GetFormByIdAsync("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", It.IsAny<string>()))
+                .Returns(Task.FromResult(form2));
+            
+            // Setup for unknown forms
+            _mockFormBL.Setup(m => m.GetFormByIdAsync("unknown-form-id", It.IsAny<string>()))
+                .ThrowsAsync(new Exception("Form not found"));
         }
+
+        #region SubmitResponseAsync Tests
 
         [Fact]
         public async Task SubmitResponseAsync_ValidResponse_ReturnsResponseId()
@@ -136,6 +167,10 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await Assert.ThrowsAsync<ArgumentNullException>(() => _responseBL.SubmitResponseAsync(null!));
         }
 
+        #endregion
+
+        #region GetResponsesForFormAsync Tests
+
         [Fact]
         public async Task GetResponsesForFormAsync_ReturnsAllResponses()
         {
@@ -170,6 +205,10 @@ namespace FormBuilderAPITests.BusinessLogicTest
             // Assert
             Assert.Empty(responses);
         }
+
+        #endregion
+
+        #region GetResponsesForUserAsync Tests
 
         [Fact]
         public async Task GetResponsesForUserAsync_ReturnsUserResponses()
@@ -207,6 +246,330 @@ namespace FormBuilderAPITests.BusinessLogicTest
             // Assert
             Assert.Empty(responses);
         }
+
+        [Fact]
+        public async Task GetResponsesForUserAsync_WithAnswers_ReturnsResponsesWithAnswers()
+        {
+            // Arrange
+            var formId = "11111111-1111-1111-1111-111111111111";
+            var userId = "testuser123";
+            
+            var response = new FormResponse 
+            { 
+                FormId = formId, 
+                SubmittedBy = userId, 
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>
+                {
+                    new FormResponseAnswer
+                    {
+                        QuestionId = "22222222-2222-2222-2222-222222222222",
+                        AnswerText = "Test Answer"
+                    }
+                }
+            };
+            
+            await _context.FormResponses.AddAsync(response);
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
+
+            // Assert
+            Assert.Single(responses);
+            Assert.Single(responses[0].Answers);
+            Assert.Equal("Test Answer", responses[0].Answers[0].AnswerText);
+        }
+
+        #endregion
+
+        #region GetAllResponsesByUserAsync Tests
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_UserHasResponses_ReturnsAllResponses()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId1 = "11111111-1111-1111-1111-111111111111";
+            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+            
+            // Add responses for multiple forms
+            await _context.FormResponses.AddRangeAsync(
+                new FormResponse 
+                { 
+                    FormId = formId1, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
+                    }
+                },
+                new FormResponse 
+                { 
+                    FormId = formId2, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
+                    }
+                },
+                new FormResponse 
+                { 
+                    FormId = formId1, 
+                    SubmittedBy = "otheruser", 
+                    SubmittedAt = DateTime.UtcNow 
+                }
+            );
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Equal(2, responses.Count);
+            Assert.All(responses, r => Assert.Equal(userId, r.SubmittedBy));
+            
+            // Verify form titles are populated
+            var response1 = responses.FirstOrDefault(r => r.FormId == formId1);
+            var response2 = responses.FirstOrDefault(r => r.FormId == formId2);
+            
+            Assert.NotNull(response1);
+            Assert.NotNull(response2);
+            Assert.Equal("Test Form", response1.FormTitle);
+            Assert.Equal("Second Test Form", response2.FormTitle);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_NoResponses_ReturnsEmptyList()
+        {
+            // Arrange
+            var userId = "nonexistentuser";
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Empty(responses);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_WithFiles_ReturnsResponsesWithFiles()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId = "11111111-1111-1111-1111-111111111111";
+            
+            var response = new FormResponse 
+            { 
+                FormId = formId, 
+                SubmittedBy = userId, 
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>
+                {
+                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
+                }
+            };
+            
+            await _context.FormResponses.AddAsync(response);
+            await _context.SaveChangesAsync();
+            
+            // Add a file
+            var file = new ResponseFile
+            {
+                ResponseId = response.ResponseId,
+                QuestionId = "99999999-9999-9999-9999-999999999999",
+                FileName = "test.pdf",
+                FileType = "application/pdf",
+                FileMaxSize = 1024,
+                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test content")),
+                UploadedAt = DateTime.UtcNow
+            };
+            
+            await _context.ResponseFiles.AddAsync(file);
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Single(responses);
+            Assert.Single(responses[0].Files);
+            Assert.Equal("test.pdf", responses[0].Files[0].FileName);
+            Assert.Equal("application/pdf", responses[0].Files[0].FileType);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_MultipleResponsesSameForm_ReturnsAllResponses()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId = "11111111-1111-1111-1111-111111111111";
+            
+            // Add multiple responses for the same form
+            await _context.FormResponses.AddRangeAsync(
+                new FormResponse 
+                { 
+                    FormId = formId, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow.AddDays(-2),
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "first answer" }
+                    }
+                },
+                new FormResponse 
+                { 
+                    FormId = formId, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow.AddDays(-1),
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "second answer" }
+                    }
+                },
+                new FormResponse 
+                { 
+                    FormId = formId, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "third answer" }
+                    }
+                }
+            );
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Equal(3, responses.Count);
+            Assert.All(responses, r => 
+            {
+                Assert.Equal(userId, r.SubmittedBy);
+                Assert.Equal(formId, r.FormId);
+                Assert.Equal("Test Form", r.FormTitle);
+            });
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_FormNotFound_ReturnsUnknownFormTitle()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var unknownFormId = "unknown-form-id";
+            
+            var response = new FormResponse 
+            { 
+                FormId = unknownFormId, 
+                SubmittedBy = userId, 
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>
+                {
+                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
+                }
+            };
+            
+            await _context.FormResponses.AddAsync(response);
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Single(responses);
+            Assert.Equal("Unknown Form", responses[0].FormTitle);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_MixedFormsWithAnswersAndFiles_ReturnsCompleteData()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId1 = "11111111-1111-1111-1111-111111111111";
+            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+            
+            var response1 = new FormResponse 
+            { 
+                FormId = formId1, 
+                SubmittedBy = userId, 
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>
+                {
+                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" },
+                    new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
+                }
+            };
+            
+            var response2 = new FormResponse 
+            { 
+                FormId = formId2, 
+                SubmittedBy = userId, 
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>
+                {
+                    new FormResponseAnswer { QuestionId = "q3", AnswerText = "answer3" }
+                }
+            };
+            
+            await _context.FormResponses.AddRangeAsync(response1, response2);
+            await _context.SaveChangesAsync();
+            
+            // Add files to response1
+            var file1 = new ResponseFile
+            {
+                ResponseId = response1.ResponseId,
+                QuestionId = "file-q1",
+                FileName = "doc1.pdf",
+                FileType = "application/pdf",
+                FileMaxSize = 2048,
+                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content 1")),
+                UploadedAt = DateTime.UtcNow
+            };
+            
+            var file2 = new ResponseFile
+            {
+                ResponseId = response1.ResponseId,
+                QuestionId = "file-q2",
+                FileName = "doc2.docx",
+                FileType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                FileMaxSize = 3072,
+                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content 2")),
+                UploadedAt = DateTime.UtcNow
+            };
+            
+            await _context.ResponseFiles.AddRangeAsync(file1, file2);
+            await _context.SaveChangesAsync();
+
+            // Act
+            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+
+            // Assert
+            Assert.Equal(2, responses.Count);
+            
+            var resp1 = responses.FirstOrDefault(r => r.FormId == formId1);
+            var resp2 = responses.FirstOrDefault(r => r.FormId == formId2);
+            
+            Assert.NotNull(resp1);
+            Assert.NotNull(resp2);
+            
+            // Verify response 1 has 2 answers and 2 files
+            Assert.Equal(2, resp1.Answers.Count);
+            Assert.Equal(2, resp1.Files.Count);
+            Assert.Equal("Test Form", resp1.FormTitle);
+            
+            // Verify response 2 has 1 answer and no files
+            Assert.Single(resp2.Answers);
+            Assert.Empty(resp2.Files);
+            Assert.Equal("Second Test Form", resp2.FormTitle);
+        }
+
+        #endregion
+
+        #region GetFileByResponseIdAndFileIdAsync Tests
 
         [Fact]
         public async Task GetFileByResponseIdAndFileIdAsync_FileExists_ReturnsFileDTO()
@@ -261,6 +624,8 @@ namespace FormBuilderAPITests.BusinessLogicTest
             // Assert
             Assert.Null(result);
         }
+
+        #endregion
 
         public void Dispose()
         {

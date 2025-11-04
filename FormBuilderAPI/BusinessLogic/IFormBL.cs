@@ -7,7 +7,12 @@ namespace FormBuilderAPI.BusinessLogicLayer
 {
     public interface IFormBL
     {
-        Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit);
+        Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(
+    string userRole,
+    int pageNumber,
+    int pageSize,
+    string? search = null);
+
         Task<Form?> GetFormByIdAsync(string id, string userRole);
 
         // Config

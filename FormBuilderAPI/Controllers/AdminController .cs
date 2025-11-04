@@ -23,10 +23,23 @@ namespace FormBuilderAPI.Controllers
 
        
         [HttpGet("forms/{formId:length(24)}/responses")]
-        public async Task<IActionResult> GetResponsesForForm(string formId)
-        {
-            var responses = await _responseBL.GetResponsesForFormAsync(formId);
-            return Ok(responses);
-        }
+[Authorize(Roles = "Admin")] // Optional: add this if it’s an admin-only view
+public async Task<IActionResult> GetResponsesForForm(
+    string formId,
+    [FromQuery] string? search,
+    [FromQuery] int pageNumber = 1,
+    [FromQuery] int pageSize = 6)
+{
+    // 1️⃣ Fetch all responses for this form (with optional search + pagination)
+    var pagedResult = await _responseBL.GetResponsesForFormAsync(formId, search, pageNumber, pageSize);
+
+    // 2️⃣ If no responses found
+    if (pagedResult == null)
+        return NotFound(new { message = "No responses found for this form." });
+
+    // 3️⃣ Return paginated + filtered responses
+    return Ok(pagedResult);
+}
+
     }
 }

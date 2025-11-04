@@ -23,26 +23,48 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext = sqlContext;
         }
 
-        public async Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit)
+
+
+        public async Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(
+    string userRole,
+    int pageNumber,
+    int pageSize,
+    string? search = null)
         {
-            var filter = Builders<Form>.Filter.Empty;
+            var filterBuilder = Builders<Form>.Filter;
+            var filter = filterBuilder.Empty;
 
-            // Apply filter for non-admin users
+            // Role-based filter
             if (userRole != "Admin")
-                filter = Builders<Form>.Filter.Eq(f => f.Status, MongoFormStatus.Published);
+                filter = filterBuilder.Eq(f => f.Status, MongoFormStatus.Published);
 
-            // Get total count for pagination info
+            // Search filter (case-insensitive)
+            if (!string.IsNullOrEmpty(search))
+            {
+                var searchFilter = filterBuilder.Or(
+                    filterBuilder.Regex("Config.Title", new MongoDB.Bson.BsonRegularExpression(search, "i")),
+                    filterBuilder.Regex("Config.Description", new MongoDB.Bson.BsonRegularExpression(search, "i"))
+                );
+                filter = filterBuilder.And(filter, searchFilter);
+            }
+
+            // Pagination offset
+            int offset = (pageNumber - 1) * pageSize;
+
+            // Total count
             var totalCount = await _forms.CountDocumentsAsync(filter);
 
-            // Apply pagination
+            // Paginated data
             var forms = await _forms.Find(filter)
-                                    .SortByDescending(f => f.CreatedAt)  // optional, helps with ordering
+                                    .SortByDescending(f => f.CreatedAt)
                                     .Skip(offset)
-                                    .Limit(limit)
+                                    .Limit(pageSize)
                                     .ToListAsync();
 
             return (forms, totalCount);
         }
+
+
 
         public async Task<Form?> GetFormByIdAsync(string id, string userRole)
         {

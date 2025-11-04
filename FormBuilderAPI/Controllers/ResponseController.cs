@@ -67,7 +67,10 @@ namespace FormBuilderAPI.Controllers
 
         [HttpGet("my-responses")]
         [Authorize(Roles = "Learner")]
-        public async Task<IActionResult> GetAllResponsesByLearner()
+        public async Task<IActionResult> GetAllResponsesByLearner(
+    [FromQuery] string? search,
+    [FromQuery] int pageNumber = 1,
+    [FromQuery] int pageSize = 6)
         {
             // 1️⃣ Get logged-in user ID from JWT claims
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -76,16 +79,18 @@ namespace FormBuilderAPI.Controllers
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized(new { message = "User ID not found in token." });
 
-            // 2️⃣ Fetch all responses submitted by this user across all forms
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            // 2️⃣ Fetch all responses submitted by this user (with optional search + pagination)
+            var pagedResult = await _responseBL.GetAllResponsesByUserAsync(userId, search, pageNumber, pageSize);
 
             // 3️⃣ If no responses found
-            if (responses == null || !responses.Any())
+            if (pagedResult == null)
                 return NotFound(new { message = "No responses found for this user." });
 
-            // 4️⃣ Return all responses
-            return Ok(responses);
+            // 4️⃣ Return paginated + filtered responses
+            return Ok(pagedResult);
         }
+
+
 
 
 

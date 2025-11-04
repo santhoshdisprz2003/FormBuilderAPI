@@ -24,22 +24,30 @@ namespace FormBuilderAPI.Controllers
 
         // ✅ GET all forms with pagination
         [HttpGet]
-        public async Task<IActionResult> GetAllForms(int offset = 0, int limit = 10)
+        public async Task<IActionResult> GetAllForms(int pageNumber = 1, int pageSize = 9, string? search = null)
         {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 9;
+
             var userRole = User.IsInRole("Admin") ? "Admin" : "Learner";
 
-            var (forms, totalCount) = await _formBL.GetAllFormsAsync(userRole, offset, limit);
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync(userRole, pageNumber, pageSize, search);
+
+            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
             var response = new
             {
                 TotalCount = totalCount,
-                Offset = offset,
-                Limit = limit,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Search = search,
                 Data = forms
             };
 
             return Ok(response);
         }
+
 
         // ✅ GET form by ID
         [HttpGet("{id:length(24)}")]

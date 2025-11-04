@@ -40,30 +40,30 @@ namespace FormBuilderAPITests.BusinessLogicTest
             public TestFormBL(SQLDbContext sqlContext)
             {
                 _sqlContext = sqlContext;
-                
+
                 // Add some test forms
-                _forms.Add(new Form 
-                { 
-                    Id = "1", 
+                _forms.Add(new Form
+                {
+                    Id = "1",
                     Status = MongoFormStatus.Draft,
                     Config = new FormConfig { Title = "Draft Form", Description = "Draft Description" },
                     Layout = new FormLayout
                     {
-                        HeaderCard = new FormHeaderCard { Title = "Draft Header" },
+                        HeaderCard = new FormHeaderCard { Title = "Draft Header", Description = "Draft Desc" },
                         Fields = new List<FormField>()
                     },
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "admin"
                 });
-                
-                _forms.Add(new Form 
-                { 
-                    Id = "2", 
+
+                _forms.Add(new Form
+                {
+                    Id = "2",
                     Status = MongoFormStatus.Published,
                     Config = new FormConfig { Title = "Published Form", Description = "Published Description" },
                     Layout = new FormLayout
                     {
-                        HeaderCard = new FormHeaderCard { Title = "Published Header" },
+                        HeaderCard = new FormHeaderCard { Title = "Published Header", Description = "Published Desc" },
                         Fields = new List<FormField>()
                     },
                     CreatedAt = DateTime.UtcNow,
@@ -71,14 +71,14 @@ namespace FormBuilderAPITests.BusinessLogicTest
                     PublishedAt = DateTime.UtcNow
                 });
 
-                _forms.Add(new Form 
-                { 
-                    Id = "3", 
+                _forms.Add(new Form
+                {
+                    Id = "3",
                     Status = MongoFormStatus.Draft,
                     Config = new FormConfig { Title = "Another Draft", Description = "Another Description" },
                     Layout = new FormLayout
                     {
-                        HeaderCard = new FormHeaderCard { Title = "Another Header" },
+                        HeaderCard = new FormHeaderCard { Title = "Another Header", Description = "Another Desc" },
                         Fields = new List<FormField>()
                     },
                     CreatedAt = DateTime.UtcNow.AddDays(-1),
@@ -86,10 +86,16 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 });
             }
 
-            public Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(string userRole, int offset, int limit)
+            // Updated to match FormBL signature: pageNumber and pageSize instead of offset and limit
+            public Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(
+                string userRole,
+                int pageNumber,
+                int pageSize,
+                string? search = null)
             {
                 IEnumerable<Form> filteredForms;
 
+                // Role-based filter
                 if (userRole == "Admin")
                 {
                     filteredForms = _forms;
@@ -99,11 +105,23 @@ namespace FormBuilderAPITests.BusinessLogicTest
                     filteredForms = _forms.Where(f => f.Status == MongoFormStatus.Published);
                 }
 
+                // Search filter (case-insensitive)
+                if (!string.IsNullOrEmpty(search))
+                {
+                    filteredForms = filteredForms.Where(f =>
+                        f.Config.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                        f.Config.Description.Contains(search, StringComparison.OrdinalIgnoreCase));
+                }
+
                 var totalCount = filteredForms.Count();
+
+                // Pagination offset
+                int offset = (pageNumber - 1) * pageSize;
+
                 var paginatedForms = filteredForms
                     .OrderByDescending(f => f.CreatedAt)
                     .Skip(offset)
-                    .Take(limit)
+                    .Take(pageSize)
                     .ToList();
 
                 return Task.FromResult<(IEnumerable<Form>, long)>((paginatedForms, totalCount));
@@ -112,13 +130,13 @@ namespace FormBuilderAPITests.BusinessLogicTest
             public Task<Form?> GetFormByIdAsync(string id, string userRole)
             {
                 var form = _forms.FirstOrDefault(f => f.Id == id);
-                
+
                 if (form == null)
                     return Task.FromResult<Form?>(null);
-                    
+
                 if (userRole != "Admin" && form.Status != MongoFormStatus.Published)
                     return Task.FromResult<Form?>(null);
-                    
+
                 return Task.FromResult<Form?>(form);
             }
 
@@ -286,8 +304,8 @@ namespace FormBuilderAPITests.BusinessLogicTest
         [Fact]
         public async Task GetAllFormsAsync_AdminRole_ReturnsAllForms()
         {
-            // Act
-            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 10);
+            // Act - Using pageNumber=1, pageSize=10
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10);
 
             // Assert
             Assert.Equal(3, totalCount);
@@ -301,7 +319,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
         public async Task GetAllFormsAsync_LearnerRole_ReturnsOnlyPublishedForms()
         {
             // Act
-            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Learner", 0, 10);
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Learner", 1, 10);
 
             // Assert
             Assert.Equal(1, totalCount);
@@ -311,20 +329,32 @@ namespace FormBuilderAPITests.BusinessLogicTest
         }
 
         [Fact]
-        public async Task GetAllFormsAsync_WithPagination_ReturnsCorrectPage()
+        public async Task GetAllFormsAsync_WithSearch_ReturnsFilteredForms()
         {
-            // Act - Get first page with limit 2
-            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 2);
+            // Act - Search for "Draft"
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10, "Draft");
 
             // Assert
-            Assert.Equal(3, totalCount);
+            Assert.Equal(2, totalCount); // "Draft Form" and "Another Draft"
             Assert.Equal(2, forms.Count());
         }
 
         [Fact]
-        public async Task GetAllFormsAsync_WithOffset_ReturnsCorrectPage()
+        public async Task GetAllFormsAsync_WithSearchPublished_ReturnsFilteredForms()
         {
-            // Act - Get second page with offset 1 and limit 2
+            // Act - Search for "Published"
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10, "Published");
+
+            // Assert
+            Assert.Equal(1, totalCount);
+            Assert.Single(forms);
+            Assert.Equal("2", forms.First().Id);
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_WithPagination_ReturnsCorrectPage()
+        {
+            // Act - Get first page with pageSize 2
             var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 2);
 
             // Assert
@@ -333,15 +363,60 @@ namespace FormBuilderAPITests.BusinessLogicTest
         }
 
         [Fact]
+        public async Task GetAllFormsAsync_SecondPage_ReturnsCorrectPage()
+        {
+            // Act - Get second page with pageNumber=2, pageSize=2
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 2, 2);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Single(forms); // Only 1 form on second page
+        }
+
+        [Fact]
         public async Task GetAllFormsAsync_OrderedByCreatedAt_ReturnsDescendingOrder()
         {
             // Act
-            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 0, 10);
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10);
 
             // Assert
             var formsList = forms.ToList();
             Assert.True(formsList[0].CreatedAt >= formsList[1].CreatedAt);
             Assert.True(formsList[1].CreatedAt >= formsList[2].CreatedAt);
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_EmptySearch_ReturnsAllForms()
+        {
+            // Act
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10, "");
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(3, forms.Count());
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_NullSearch_ReturnsAllForms()
+        {
+            // Act
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Admin", 1, 10, null);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(3, forms.Count());
+        }
+
+        [Fact]
+        public async Task GetAllFormsAsync_LearnerWithSearch_ReturnsOnlyPublishedMatchingForms()
+        {
+            // Act
+            var (forms, totalCount) = await _formBL.GetAllFormsAsync("Learner", 1, 10, "Published");
+
+            // Assert
+            Assert.Equal(1, totalCount);
+            Assert.Single(forms);
+            Assert.All(forms, f => Assert.Equal(MongoFormStatus.Published, f.Status));
         }
 
         #endregion
@@ -828,7 +903,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
         {
             // Arrange
             var formId = "1";
-            
+
             // Add some test responses to SQL database
             var response = new FormBuilderAPI.Model.SQLModel.FormResponse
             {
@@ -836,10 +911,10 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 SubmittedBy = "user123",
                 SubmittedAt = DateTime.UtcNow
             };
-            
+
             _sqlContext.FormResponses.Add(response);
             await _sqlContext.SaveChangesAsync();
-            
+
             // Add answer separately after response is saved to get the ResponseId
             var answer = new FormBuilderAPI.Model.SQLModel.FormResponseAnswer
             {
@@ -847,7 +922,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 QuestionId = "q1",
                 AnswerText = "Test Answer"
             };
-            
+
             _sqlContext.FormResponseAnswers.Add(answer);
             await _sqlContext.SaveChangesAsync();
 
@@ -860,11 +935,93 @@ namespace FormBuilderAPITests.BusinessLogicTest
                 .Where(r => r.FormId == formId)
                 .ToListAsync();
             Assert.Empty(remainingResponses);
-            
+
             var remainingAnswers = await _sqlContext.FormResponseAnswers
                 .Where(a => a.ResponseId == response.ResponseId)
                 .ToListAsync();
             Assert.Empty(remainingAnswers);
+        }
+
+        [Fact]
+        public async Task DeleteFormAsync_WithMultipleResponses_DeletesAllRelatedData()
+        {
+            // Arrange
+            var formId = "3";
+
+            var response1 = new FormBuilderAPI.Model.SQLModel.FormResponse
+            {
+                FormId = formId,
+                SubmittedBy = "user1",
+                SubmittedAt = DateTime.UtcNow
+            };
+
+            var response2 = new FormBuilderAPI.Model.SQLModel.FormResponse
+            {
+                FormId = formId,
+                SubmittedBy = "user2",
+                SubmittedAt = DateTime.UtcNow
+            };
+
+            _sqlContext.FormResponses.AddRange(response1, response2);
+            await _sqlContext.
+SaveChangesAsync();
+
+            var answer1 = new FormBuilderAPI.Model.SQLModel.FormResponseAnswer
+            {
+                ResponseId = response1.ResponseId,
+                QuestionId = "q1",
+                AnswerText = "Answer 1"
+            };
+
+            var answer2 = new FormBuilderAPI.Model.SQLModel.FormResponseAnswer
+            {
+                ResponseId = response1.ResponseId,
+                QuestionId = "q2",
+                AnswerText = "Answer 2"
+            };
+
+            var answer3 = new FormBuilderAPI.Model.SQLModel.FormResponseAnswer
+            {
+                ResponseId = response2.ResponseId,
+                QuestionId = "q1",
+                AnswerText = "Answer 3"
+            };
+
+            _sqlContext.FormResponseAnswers.AddRange(answer1, answer2, answer3);
+            await _sqlContext.SaveChangesAsync();
+
+            // Act
+            var result = await _formBL.DeleteFormAsync(formId);
+
+            // Assert
+            Assert.True(result);
+
+            var remainingResponses = await _sqlContext.FormResponses
+                .Where(r => r.FormId == formId)
+                .ToListAsync();
+            Assert.Empty(remainingResponses);
+
+            var remainingAnswers = await _sqlContext.FormResponseAnswers
+                .Where(a => a.ResponseId == response1.ResponseId || a.ResponseId == response2.ResponseId)
+                .ToListAsync();
+            Assert.Empty(remainingAnswers);
+        }
+
+        [Fact]
+        public async Task DeleteFormAsync_FormWithNoResponses_DeletesFormOnly()
+        {
+            // Arrange
+            var formId = "2";
+
+            // Act
+            var result = await _formBL.DeleteFormAsync(formId);
+
+            // Assert
+            Assert.True(result);
+
+            // Verify form is deleted
+            var deletedForm = await _formBL.GetFormByIdAsync(formId, "Admin");
+            Assert.Null(deletedForm);
         }
 
         #endregion

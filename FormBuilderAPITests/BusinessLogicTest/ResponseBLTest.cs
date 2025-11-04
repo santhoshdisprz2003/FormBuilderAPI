@@ -172,38 +172,119 @@ namespace FormBuilderAPITests.BusinessLogicTest
         #region GetResponsesForFormAsync Tests
 
         [Fact]
-        public async Task GetResponsesForFormAsync_ReturnsAllResponses()
+        public async Task GetResponsesForFormAsync_ReturnsAllResponses_WithPagination()
         {
             // Arrange
             var formId = "11111111-1111-1111-1111-111111111111";
             
+            // Add test users
+            await _context.Users.AddRangeAsync(
+                new User { UserId = 1, Username = "user1", Email = "user1@test.com", PasswordHash = "hash1", Role = "Learner" },
+                new User { UserId = 2, Username = "user2", Email = "user2@test.com", PasswordHash = "hash2", Role = "Learner" }
+            );
+            await _context.SaveChangesAsync();
+            
             // Add some responses
             await _context.FormResponses.AddRangeAsync(
-                new FormResponse { FormId = formId, SubmittedBy = "user1", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = "user2", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = "different-form", SubmittedBy = "user3", SubmittedAt = DateTime.UtcNow } // Different form
+                new FormResponse { FormId = formId, SubmittedBy = "1", SubmittedAt = DateTime.UtcNow },
+                new FormResponse { FormId = formId, SubmittedBy = "2", SubmittedAt = DateTime.UtcNow },
+                new FormResponse { FormId = "different-form", SubmittedBy = "1", SubmittedAt = DateTime.UtcNow } // Different form
             );
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetResponsesForFormAsync(formId);
+            var result = await _responseBL.GetResponsesForFormAsync(formId);
 
             // Assert
-            Assert.Equal(2, responses.Count);
-            Assert.All(responses, r => Assert.Equal(formId, r.FormId));
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(2, resultDict.TotalCount);
+            Assert.Equal(1, resultDict.TotalPages);
+            Assert.Equal(1, resultDict.PageNumber);
+            Assert.Equal(6, resultDict.PageSize);
+            Assert.Equal(2, ((List<dynamic>)resultDict.Items).Count);
         }
 
         [Fact]
-        public async Task GetResponsesForFormAsync_NoResponses_ReturnsEmptyList()
+        public async Task GetResponsesForFormAsync_NoResponses_ReturnsNull()
         {
             // Arrange
             var formId = "nonexistent-form";
 
             // Act
-            var responses = await _responseBL.GetResponsesForFormAsync(formId);
+            var result = await _responseBL.GetResponsesForFormAsync(formId);
 
             // Assert
-            Assert.Empty(responses);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithSearch_FiltersResults()
+        {
+            // Arrange
+            var formId = "11111111-1111-1111-1111-111111111111";
+            
+            // Add test users
+            await _context.Users.AddRangeAsync(
+                new User { UserId = 1, Username = "john_doe", Email = "john@test.com", PasswordHash = "hash1", Role = "Learner" },
+                new User { UserId = 2, Username = "jane_smith", Email = "jane@test.com", PasswordHash = "hash2", Role = "Learner" },
+                new User { UserId = 3, Username = "bob_jones", Email = "bob@test.com", PasswordHash = "hash3", Role = "Learner" }
+            );
+            await _context.SaveChangesAsync();
+            
+            // Add responses
+            await _context.FormResponses.AddRangeAsync(
+                new FormResponse { FormId = formId, SubmittedBy = "1", SubmittedAt = DateTime.UtcNow },
+                new FormResponse { FormId = formId, SubmittedBy = "2", SubmittedAt = DateTime.UtcNow },
+                new FormResponse { FormId = formId, SubmittedBy = "3", SubmittedAt = DateTime.UtcNow }
+            );
+            await _context.SaveChangesAsync();
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync(formId, search: "john");
+
+            // Assert
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(1, resultDict.TotalCount);
+            Assert.Equal(1, ((List<dynamic>)resultDict.Items).Count);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            var formId = "11111111-1111-1111-1111-111111111111";
+            
+            // Add test users
+            for (int i = 1; i <= 10; i++)
+            {
+                await _context.Users.AddAsync(
+                    new User { UserId = i, Username = $"user{i}", Email = $"user{i}@test.com", PasswordHash = $"hash{i}", Role = "Learner" }
+                );
+            }
+            await _context.SaveChangesAsync();
+            
+            // Add 10 responses
+            for (int i = 1; i <= 10; i++)
+            {
+                await _context.FormResponses.AddAsync(
+                    new FormResponse { FormId = formId, SubmittedBy = i.ToString(), SubmittedAt = DateTime.UtcNow }
+                );
+            }
+            await _context.SaveChangesAsync();
+
+            // Act - Get page 2 with page size 6
+            var result = await _responseBL.GetResponsesForFormAsync(formId, pageNumber: 2, pageSize: 6);
+
+            // Assert
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(10, resultDict.TotalCount);
+            Assert.Equal(2, resultDict.TotalPages);
+            Assert.Equal(2, resultDict.PageNumber);
+            Assert.Equal(6, resultDict.PageSize);
+            Assert.Equal(4, ((List<dynamic>)resultDict.Items).Count); // Remaining 4 items on page 2
         }
 
         #endregion
@@ -286,7 +367,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
         #region GetAllResponsesByUserAsync Tests
 
         [Fact]
-        public async Task GetAllResponsesByUserAsync_UserHasResponses_ReturnsAllResponses()
+        public async Task GetAllResponsesByUserAsync_UserHasResponses_ReturnsAllResponses_WithPagination()
         {
             // Arrange
             var userId = "testuser123";
@@ -325,15 +406,22 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Equal(2, responses.Count);
-            Assert.All(responses, r => Assert.Equal(userId, r.SubmittedBy));
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(2, resultDict.TotalCount);
+            Assert.Equal(1, resultDict.PageNumber);
+            Assert.Equal(6, resultDict.PageSize);
+            
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Equal(2, items.Count);
+            Assert.All(items, r => Assert.Equal(userId, r.SubmittedBy));
             
             // Verify form titles are populated
-            var response1 = responses.FirstOrDefault(r => r.FormId == formId1);
-            var response2 = responses.FirstOrDefault(r => r.FormId == formId2);
+            var response1 = items.FirstOrDefault(r => r.FormId == formId1);
+            var response2 = items.FirstOrDefault(r => r.FormId == formId2);
             
             Assert.NotNull(response1);
             Assert.NotNull(response2);
@@ -342,16 +430,19 @@ namespace FormBuilderAPITests.BusinessLogicTest
         }
 
         [Fact]
-        public async Task GetAllResponsesByUserAsync_NoResponses_ReturnsEmptyList()
+        public async Task GetAllResponsesByUserAsync_NoResponses_ReturnsEmptyResult()
         {
             // Arrange
             var userId = "nonexistentuser";
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Empty(responses);
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(0, resultDict.TotalCount);
+            Assert.Empty((List<ResponseDetailDTO>)resultDict.Items);
         }
 
         [Fact]
@@ -391,13 +482,103 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Single(responses);
-            Assert.Single(responses[0].Files);
-            Assert.Equal("test.pdf", responses[0].Files[0].FileName);
-            Assert.Equal("application/pdf", responses[0].Files[0].FileType);
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            
+            Assert.Single(items);
+            Assert.Single(items[0].Files);
+            Assert.Equal("test.pdf", items[0].Files[0].FileName);
+            Assert.Equal("application/pdf", items[0].Files[0].FileType);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_WithSearch_FiltersResults()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId1 = "11111111-1111-1111-1111-111111111111";
+            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+            
+            // Add responses for multiple forms
+            await _context.FormResponses.AddRangeAsync(
+                new FormResponse 
+                { 
+                    FormId = formId1, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
+                    }
+                },
+                new FormResponse 
+                { 
+                    FormId = formId2, 
+                    SubmittedBy = userId, 
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
+                    }
+                }
+            );
+            await _context.SaveChangesAsync();
+
+            // Act - Search for "Second" which should match "Second Test Form"
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId, search: "Second");
+
+            // Assert
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(1, resultDict.TotalCount);
+            
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Single(items);
+            Assert.Equal(formId2, items[0].FormId);
+            Assert.Equal("Second Test Form", items[0].FormTitle);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            var userId = "testuser123";
+            var formId = "11111111-1111-1111-1111-111111111111";
+            
+            // Add 10 responses
+            for (int i = 0; i < 10; i++)
+            {
+                await _context.FormResponses.AddAsync(
+                    new FormResponse 
+                    { 
+                        FormId = formId, 
+                        SubmittedBy = userId, 
+                        SubmittedAt = DateTime.UtcNow.AddMinutes(-i),
+                        Answers = new List<FormResponseAnswer>
+                        {
+                            new FormResponseAnswer { QuestionId = "q1", AnswerText = $"answer{i}" }
+                        }
+                    }
+                );
+            }
+            await _context.SaveChangesAsync();
+
+            // Act - Get page 2 with page size 6
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId, pageNumber: 2, pageSize: 6);
+
+            // Assert
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(10, resultDict.TotalCount);
+            Assert.Equal(2, resultDict.PageNumber);
+            Assert.Equal(6, resultDict.PageSize);
+            
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Equal(4, items.Count); // Remaining 4 items on page 2
         }
 
         [Fact]
@@ -443,11 +624,16 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Equal(3, responses.Count);
-            Assert.All(responses, r => 
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(3, resultDict.TotalCount);
+            
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Equal(3, items.Count);
+            Assert.All(items, r => 
             {
                 Assert.Equal(userId, r.SubmittedBy);
                 Assert.Equal(formId, r.FormId);
@@ -477,11 +663,15 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Single(responses);
-            Assert.Equal("Unknown Form", responses[0].FormTitle);
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            
+            Assert.Single(items);
+            Assert.Equal("Unknown Form", items[0].FormTitle);
         }
 
         [Fact]
@@ -545,13 +735,18 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await _context.SaveChangesAsync();
 
             // Act
-            var responses = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
 
             // Assert
-            Assert.Equal(2, responses.Count);
+            Assert.NotNull(result);
+            var resultDict = result as dynamic;
+            Assert.Equal(2, resultDict.TotalCount);
             
-            var resp1 = responses.FirstOrDefault(r => r.FormId == formId1);
-            var resp2 = responses.FirstOrDefault(r => r.FormId == formId2);
+            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Equal(2, items.Count);
+            
+            var resp1 = items.FirstOrDefault(r => r.FormId == formId1);
+            var resp2 = items.FirstOrDefault(r => r.FormId == formId2);
             
             Assert.NotNull(resp1);
             Assert.NotNull(resp2);
@@ -571,7 +766,7 @@ namespace FormBuilderAPITests.BusinessLogicTest
 
         #region GetFileByResponseIdAndFileIdAsync Tests
 
-        [Fact]
+                [Fact]
         public async Task GetFileByResponseIdAndFileIdAsync_FileExists_ReturnsFileDTO()
         {
             // Arrange
@@ -626,7 +821,6 @@ namespace FormBuilderAPITests.BusinessLogicTest
         }
 
         #endregion
-
         public void Dispose()
         {
             // Clean up the in-memory database after each test

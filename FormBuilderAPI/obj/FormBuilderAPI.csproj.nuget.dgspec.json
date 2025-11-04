@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderApI\\FormBuilderAPI.csproj": {}
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\FormBuilderAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderApI\\FormBuilderAPI.csproj": {
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\FormBuilderAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderApI\\FormBuilderAPI.csproj",
+        "projectUniqueName": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\FormBuilderAPI.csproj",
         "projectName": "FormBuilderAPI",
-        "projectPath": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderApI\\FormBuilderAPI.csproj",
+        "projectPath": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\FormBuilderAPI.csproj",
         "packagesPath": "C:\\Users\\santhosh.d_disprz\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderApI\\obj\\",
+        "outputPath": "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\santhosh.d_disprz\\AppData\\Roaming\\NuGet\\NuGet.Config"

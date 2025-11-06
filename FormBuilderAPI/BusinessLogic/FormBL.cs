@@ -23,8 +23,6 @@ namespace FormBuilderAPI.BusinessLogicLayer
             _sqlContext = sqlContext;
         }
 
-
-
         public async Task<(IEnumerable<Form> Forms, long TotalCount)> GetAllFormsAsync(
     string userRole,
     int pageNumber,

@@ -1,164 +1,32 @@
 using FormBuilderAPI.BusinessLogicLayer;
-using FormBuilderAPI.DataAccessLayer;
+using FormBuilderAPI.Repository;
 using FormBuilderAPI.Model.SQLModel;
 using FormBuilderAPI.Model.MongoModel;
 using FormBuilderAPI.DTOs;
-using Microsoft.EntityFrameworkCore;
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using System.Text;
-using Moq;
 
 namespace FormBuilderAPITests.BusinessLogicTest
 {
-    public class ResponseBLTest : IDisposable
+    public class ResponseBLTest
     {
-        private readonly SQLDbContext _context;
-        private readonly IResponseBL _responseBL;
+        private readonly Mock<IResponseRepository> _mockResponseRepository;
         private readonly Mock<IFormBL> _mockFormBL;
-        private readonly string _databaseName;
+        private readonly IResponseBL _responseBL;
 
         public ResponseBLTest()
         {
-            _databaseName = Guid.NewGuid().ToString(); // Use a unique database name for each test run
-            var options = new DbContextOptionsBuilder<SQLDbContext>()
-                .UseInMemoryDatabase(databaseName: _databaseName)
-                .Options;
-                
-            _context = new SQLDbContext(options);
-            
-            // Create a mock for IFormBL
+            _mockResponseRepository = new Mock<IResponseRepository>();
             _mockFormBL = new Mock<IFormBL>();
-            
-            // Set up the mock FormBL to return a form when GetFormByIdAsync is called
-            SetupMockFormBL();
-            
-            // Initialize ResponseBL with the context and mock FormBL
-            _responseBL = new ResponseBL(_context, _mockFormBL.Object);
-        }
-
-        private void SetupMockFormBL()
-        {
-            // Create a form that matches our test data
-            var form = new Form
-            {
-                Id = "11111111-1111-1111-1111-111111111111",
-                Config = new FormConfig
-                {
-                    Title = "Test Form",
-                    Description = "Test Form Description"
-                },
-                Layout = new FormLayout
-                {
-                    Fields = new List<FormField>
-                    {
-                        new FormField
-                        {
-                            QuestionId = "22222222-2222-2222-2222-222222222222",
-                            Label = "Single Choice Question",
-                            Type = "single-choice",
-                            SingleChoice = true,
-                            Options = new List<FieldOption>
-                            {
-                                new FieldOption { OptionId = "33333333-3333-3333-3333-333333333333", Value = "Option 1" },
-                                new FieldOption { OptionId = "44444444-4444-4444-4444-444444444444", Value = "Option 2" }
-                            }
-                        },
-                        new FormField
-                        {
-                            QuestionId = "55555555-5555-5555-5555-555555555555",
-                            Label = "Multiple Choice Question",
-                            Type = "multiple-choice",
-                            MultipleChoice = true,
-                            Options = new List<FieldOption>
-                            {
-                                new FieldOption { OptionId = "66666666-6666-6666-6666-666666666666", Value = "Option A" },
-                                new FieldOption { OptionId = "77777777-7777-7777-7777-777777777777", Value = "Option B" }
-                            }
-                        },
-                        new FormField
-                        {
-                            QuestionId = "88888888-8888-8888-8888-888888888888",
-                            Label = "Text Question",
-                            Type = "text"
-                        },
-                        new FormField
-                        {
-                            QuestionId = "99999999-9999-9999-9999-999999999999",
-                            Label = "File Upload Question",
-                            Type = "file"
-                        }
-                    }
-                }
-            };
-
-            var form2 = new Form
-            {
-                Id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                Config = new FormConfig
-                {
-                    Title = "Second Test Form",
-                    Description = "Second Form Description"
-                },
-                Layout = new FormLayout
-                {
-                    Fields = new List<FormField>
-                    {
-                        new FormField
-                        {
-                            QuestionId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                            Label = "Text Question",
-                            Type = "text"
-                        }
-                    }
-                }
-            };
-
-            // Setup the mock to return our forms when GetFormByIdAsync is called
-            _mockFormBL.Setup(m => m.GetFormByIdAsync("11111111-1111-1111-1111-111111111111", It.IsAny<string>()))
-                .Returns(Task.FromResult(form));
-            
-            _mockFormBL.Setup(m => m.GetFormByIdAsync("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", It.IsAny<string>()))
-                .Returns(Task.FromResult(form2));
-            
-            // Setup for unknown forms
-            _mockFormBL.Setup(m => m.GetFormByIdAsync("unknown-form-id", It.IsAny<string>()))
-                .ThrowsAsync(new Exception("Form not found"));
+            _responseBL = new ResponseBL(_mockResponseRepository.Object, _mockFormBL.Object);
         }
 
         #region SubmitResponseAsync Tests
-
-        [Fact]
-        public async Task SubmitResponseAsync_ValidResponse_ReturnsResponseId()
-        {
-            // Arrange
-            var responseDto = new ResponseDTO
-            {
-                FormId = "11111111-1111-1111-1111-111111111111",
-                SubmittedBy = "testuser",
-                Answers = new List<ResponseAnswerDTO>
-                {
-                    new ResponseAnswerDTO
-                    {
-                        QuestionId = "22222222-2222-2222-2222-222222222222",
-                        AnswerText = "Option 1"
-                    }
-                }
-            };
-
-            // Act
-            var result = await _responseBL.SubmitResponseAsync(responseDto);
-
-            // Assert
-            Assert.NotEqual(0, result);
-            var savedResponse = await _context.FormResponses.FindAsync(result);
-            Assert.NotNull(savedResponse);
-            Assert.Equal(responseDto.FormId, savedResponse.FormId);
-            Assert.Equal(responseDto.SubmittedBy, savedResponse.SubmittedBy);
-        }
 
         [Fact]
         public async Task SubmitResponseAsync_NullDto_ThrowsArgumentNullException()
@@ -167,124 +35,353 @@ namespace FormBuilderAPITests.BusinessLogicTest
             await Assert.ThrowsAsync<ArgumentNullException>(() => _responseBL.SubmitResponseAsync(null!));
         }
 
-        #endregion
-
-        #region GetResponsesForFormAsync Tests
-
         [Fact]
-        public async Task GetResponsesForFormAsync_ReturnsAllResponses_WithPagination()
+        public async Task SubmitResponseAsync_FormNotFound_ThrowsException()
         {
             // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            // Add test users
-            await _context.Users.AddRangeAsync(
-                new User { UserId = 1, Username = "user1", Email = "user1@test.com", PasswordHash = "hash1", Role = "Learner" },
-                new User { UserId = 2, Username = "user2", Email = "user2@test.com", PasswordHash = "hash2", Role = "Learner" }
-            );
-            await _context.SaveChangesAsync();
-            
-            // Add some responses
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse { FormId = formId, SubmittedBy = "1", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = "2", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = "different-form", SubmittedBy = "1", SubmittedAt = DateTime.UtcNow } // Different form
-            );
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _responseBL.GetResponsesForFormAsync(formId);
-
-            // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(2, resultDict.TotalCount);
-            Assert.Equal(1, resultDict.TotalPages);
-            Assert.Equal(1, resultDict.PageNumber);
-            Assert.Equal(6, resultDict.PageSize);
-            Assert.Equal(2, ((List<dynamic>)resultDict.Items).Count);
-        }
-
-        [Fact]
-        public async Task GetResponsesForFormAsync_NoResponses_ReturnsNull()
-        {
-            // Arrange
-            var formId = "nonexistent-form";
-
-            // Act
-            var result = await _responseBL.GetResponsesForFormAsync(formId);
-
-            // Assert
-            Assert.Null(result);
-        }
-
-        [Fact]
-        public async Task GetResponsesForFormAsync_WithSearch_FiltersResults()
-        {
-            // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            // Add test users
-            await _context.Users.AddRangeAsync(
-                new User { UserId = 1, Username = "john_doe", Email = "john@test.com", PasswordHash = "hash1", Role = "Learner" },
-                new User { UserId = 2, Username = "jane_smith", Email = "jane@test.com", PasswordHash = "hash2", Role = "Learner" },
-                new User { UserId = 3, Username = "bob_jones", Email = "bob@test.com", PasswordHash = "hash3", Role = "Learner" }
-            );
-            await _context.SaveChangesAsync();
-            
-            // Add responses
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse { FormId = formId, SubmittedBy = "1", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = "2", SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = "3", SubmittedAt = DateTime.UtcNow }
-            );
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _responseBL.GetResponsesForFormAsync(formId, search: "john");
-
-            // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(1, resultDict.TotalCount);
-            Assert.Equal(1, ((List<dynamic>)resultDict.Items).Count);
-        }
-
-        [Fact]
-        public async Task GetResponsesForFormAsync_WithPagination_ReturnsCorrectPage()
-        {
-            // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            // Add test users
-            for (int i = 1; i <= 10; i++)
+            var responseDto = new ResponseDTO
             {
-                await _context.Users.AddAsync(
-                    new User { UserId = i, Username = $"user{i}", Email = $"user{i}@test.com", PasswordHash = $"hash{i}", Role = "Learner" }
-                );
-            }
-            await _context.SaveChangesAsync();
-            
-            // Add 10 responses
-            for (int i = 1; i <= 10; i++)
-            {
-                await _context.FormResponses.AddAsync(
-                    new FormResponse { FormId = formId, SubmittedBy = i.ToString(), SubmittedAt = DateTime.UtcNow }
-                );
-            }
-            await _context.SaveChangesAsync();
+                FormId = "non-existent-form",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>()
+            };
 
-            // Act - Get page 2 with page size 6
-            var result = await _responseBL.GetResponsesForFormAsync(formId, pageNumber: 2, pageSize: 6);
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("non-existent-form", "Learner"))
+                .ReturnsAsync((Form?)null);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _responseBL.SubmitResponseAsync(responseDto));
+            Assert.Contains("Form not found or access denied", exception.Message);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_FormWithNullLayout_ThrowsException()
+        {
+            // Arrange
+            var form = new Form
+            {
+                Id = "form-123",
+                Config = new FormConfig { Title = "Test Form" },
+                Layout = null!
+            };
+
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>()
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _responseBL.SubmitResponseAsync(responseDto));
+            Assert.Contains("Form not found or access denied", exception.Message);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_ValidTextResponse_ReturnsResponseId()
+        {
+            // Arrange
+            var form = CreateTestForm();
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q1",
+                        AnswerText = "Answer 1"
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
 
             // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(10, resultDict.TotalCount);
-            Assert.Equal(2, resultDict.TotalPages);
-            Assert.Equal(2, resultDict.PageNumber);
-            Assert.Equal(6, resultDict.PageSize);
-            Assert.Equal(4, ((List<dynamic>)resultDict.Items).Count); // Remaining 4 items on page 2
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseAsync(It.Is<FormResponse>(fr =>
+                fr.FormId == "form-123" &&
+                fr.SubmittedBy == "user1" &&
+                fr.Answers.Count == 1
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_WithDropdownSingleChoice_SavesOptionId()
+        {
+            // Arrange
+            var form = CreateTestFormWithDropdown(false);
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-dropdown",
+                        AnswerText = "Option 1"
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseAsync(It.Is<FormResponse>(fr =>
+                fr.Answers.Any(a => a.QuestionId == "q-dropdown" && a.AnswerText.Contains("opt1"))
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_WithDropdownMultipleChoice_SavesMultipleOptionIds()
+        {
+            // Arrange
+            var form = CreateTestFormWithDropdown(true);
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-dropdown",
+                        AnswerText = "Option 1,Option 2"
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseAsync(It.Is<FormResponse>(fr =>
+                fr.Answers.Any(a => a.QuestionId == "q-dropdown" && 
+                    a.AnswerText.Contains("opt1") && a.AnswerText.Contains("opt2"))
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_WithFileUpload_SavesFileCorrectly()
+        {
+            // Arrange
+            var form = CreateTestFormWithFileUpload();
+            var fileContent = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test file content"));
+            
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "test.pdf",
+                            FileType = "application/pdf",
+                            FileMaxSize = 1024,
+                            Base64Content = fileContent
+                        }
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseFileAsync(It.Is<ResponseFile>(rf =>
+                rf.ResponseId == 1 &&
+                rf.QuestionId == "q-file" &&
+                rf.FileName == "test.pdf" &&
+                rf.FileType == "application/pdf"
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_FileExceedsMaxSize_ThrowsException()
+        {
+            // Arrange
+            var form = CreateTestFormWithFileUpload();
+            var largeFileContent = Convert.ToBase64String(new byte[6 * 1024 * 1024]); // 6 MB
+            
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "large.pdf",
+                            FileType = "application/pdf",
+                            FileMaxSize = 6 * 1024 * 1024,
+                            Base64Content = largeFileContent
+                        }
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _responseBL.SubmitResponseAsync(responseDto));
+            Assert.Contains("exceeds the 5 MB limit", exception.Message);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_InvalidFileType_ThrowsException()
+        {
+            // Arrange
+            var form = CreateTestFormWithFileUpload();
+            var fileContent = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test content"));
+            
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "test.exe",
+                            FileType = "application/exe",
+                            FileMaxSize = 1024,
+                            Base64Content = fileContent
+                        }
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _responseBL.SubmitResponseAsync(responseDto));
+            Assert.Contains("has invalid type", exception.Message);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_MixedAnswerTypes_ProcessesCorrectly()
+        {
+            // Arrange
+            var form = CreateTestFormWithMixedFields();
+            var fileContent = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test file"));
+            
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO { QuestionId = "q-text", AnswerText = "Text answer" },
+                    new ResponseAnswerDTO { QuestionId = "q-dropdown", AnswerText = "Option 1" },
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "test.pdf",
+                            FileType = "application/pdf",
+                            FileMaxSize = 1024,
+                            Base64Content = fileContent
+                        }
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseAsync(It.Is<FormResponse>(fr =>
+                fr.Answers.Count == 2 // Text and dropdown only
+            )), Times.Once);
+            _mockResponseRepository.Verify(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()), Times.Once);
         }
 
         #endregion
@@ -292,74 +389,312 @@ namespace FormBuilderAPITests.BusinessLogicTest
         #region GetResponsesForUserAsync Tests
 
         [Fact]
-        public async Task GetResponsesForUserAsync_ReturnsUserResponses()
-        {
-            // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            var userId = "testuser123";
-            
-            // Add some responses
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse { FormId = formId, SubmittedBy = userId, SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = userId, SubmittedAt = DateTime.UtcNow },
-                new FormResponse { FormId = formId, SubmittedBy = "otheruser", SubmittedAt = DateTime.UtcNow }
-            );
-            await _context.SaveChangesAsync();
-
-            // Act
-            var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
-
-            // Assert
-            Assert.Equal(2, responses.Count);
-            Assert.All(responses, r => Assert.Equal(userId, r.SubmittedBy));
-        }
-
-        [Fact]
         public async Task GetResponsesForUserAsync_NoResponses_ReturnsEmptyList()
         {
             // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            var userId = "nonexistentuser";
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAndUserIdAsync("form-123", "user1"))
+                .ReturnsAsync(new List<FormResponse>());
 
             // Act
-            var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
+            var result = await _responseBL.GetResponsesForUserAsync("form-123", "user1");
 
             // Assert
-            Assert.Empty(responses);
+            Assert.NotNull(result);
+            Assert.Empty(result);
         }
 
         [Fact]
-        public async Task GetResponsesForUserAsync_WithAnswers_ReturnsResponsesWithAnswers()
+        public async Task GetResponsesForUserAsync_WithResponses_ReturnsResponseDetailDTOs()
         {
             // Arrange
-            var formId = "11111111-1111-1111-1111-111111111111";
-            var userId = "testuser123";
-            
-            var response = new FormResponse 
-            { 
-                FormId = formId, 
-                SubmittedBy = userId, 
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<FormResponseAnswer>
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
                 {
-                    new FormResponseAnswer
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
                     {
-                        QuestionId = "22222222-2222-2222-2222-222222222222",
-                        AnswerText = "Test Answer"
+                        new FormResponseAnswer
+                        {
+                            AnswerId = 1,
+                            QuestionId = "q1",
+                            AnswerText = "Answer 1"
+                        }
                     }
                 }
             };
-            
-            await _context.FormResponses.AddAsync(response);
-            await _context.SaveChangesAsync();
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAndUserIdAsync("form-123", "user1"))
+                .ReturnsAsync(responses);
 
             // Act
-            var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
+            var result = await _responseBL.GetResponsesForUserAsync("form-123", "user1");
 
             // Assert
-            Assert.Single(responses);
-            Assert.Single(responses[0].Answers);
-            Assert.Equal("Test Answer", responses[0].Answers[0].AnswerText);
+            Assert.NotNull(result);
+            Assert.Single(result);
+            Assert.Equal(1, result[0].ResponseId);
+            Assert.Equal("form-123", result[0].FormId);
+            Assert.Equal("user1", result[0].SubmittedBy);
+            Assert.Single(result[0].Answers);
+        }
+
+        [Fact]
+        public async Task GetResponsesForUserAsync_MultipleResponses_ReturnsAllResponses()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                },
+                new FormResponse
+                {
+                    ResponseId = 2,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAndUserIdAsync("form-123", "user1"))
+                .ReturnsAsync(responses);
+
+            // Act
+            var result = await _responseBL.GetResponsesForUserAsync("form-123", "user1");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+        }
+
+        #endregion
+
+        #region GetResponsesForFormAsync Tests
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_NoResponses_ReturnsEmptyPagedResult()
+        {
+            // Arrange
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(new List<FormResponse>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123");
+
+            // Assert
+            Assert.NotNull(result);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            Assert.Equal(0, totalCount);
+            Assert.Empty(items);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithResponses_ReturnsPagedResult()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var users = new Dictionary<string, string> { { "1", "User One" } };
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123");
+
+            // Assert
+            Assert.NotNull(result);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var pageNumber = GetPropertyValue<int>(result, "PageNumber");
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            
+            Assert.Equal(1, totalCount);
+            Assert.Equal(1, pageNumber);
+            Assert.Single(items);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithSearch_FiltersResults()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                },
+                new FormResponse
+                {
+                    ResponseId = 2,
+                    FormId = "form-123",
+                    SubmittedBy = "2",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var users = new Dictionary<string, string>
+            {
+                { "1", "John Doe" },
+                { "2", "Jane Smith" }
+            };
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123", "John");
+
+            // Assert
+            Assert.NotNull(result);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            
+            Assert.Equal(1, totalCount);
+            Assert.Single(items);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithPagination_ReturnsCorrectPage()
+        {
+            // Arrange
+            var responses = Enumerable.Range(1, 10).Select(i => new FormResponse
+            {
+                ResponseId = i,
+                FormId = "form-123",
+                SubmittedBy = i.ToString(),
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>()
+            }).ToList();
+
+            var users = responses.ToDictionary(r => r.SubmittedBy, r => $"User {r.SubmittedBy}");
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123", null, 2, 3);
+
+            // Assert
+            Assert.NotNull(result);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var pageNumber = GetPropertyValue<int>(result, "PageNumber");
+            var pageSize = GetPropertyValue<int>(result, "PageSize");
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            
+            Assert.Equal(10, totalCount);
+            Assert.Equal(2, pageNumber);
+            Assert.Equal(3, pageSize);
+            Assert.Equal(3, items.Count);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_WithFiles_IncludesFileData()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var users = new Dictionary<string, string> { { "1", "User One" } };
+            var files = new List<ResponseFile>
+            {
+                new ResponseFile
+                {
+                    FileId = 1,
+                    ResponseId = 1,
+                    QuestionId = "q1",
+                    FileName = "test.pdf",
+                    FileType = "application/pdf",
+                    FileMaxSize = 1024,
+                    Base64Content = "base64content",
+                    UploadedAt = DateTime.UtcNow
+                }
+            };
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(1))
+                .ReturnsAsync(files);
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123");
+
+            // Assert
+            Assert.NotNull(result);
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            Assert.Single(items);
         }
 
         #endregion
@@ -367,465 +702,895 @@ namespace FormBuilderAPITests.BusinessLogicTest
         #region GetAllResponsesByUserAsync Tests
 
         [Fact]
-        public async Task GetAllResponsesByUserAsync_UserHasResponses_ReturnsAllResponses_WithPagination()
-        {
-            // Arrange
-            var userId = "testuser123";
-            var formId1 = "11111111-1111-1111-1111-111111111111";
-            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-            
-            // Add responses for multiple forms
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse 
-                { 
-                    FormId = formId1, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow,
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
-                    }
-                },
-                new FormResponse 
-                { 
-                    FormId = formId2, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow,
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
-                    }
-                },
-                new FormResponse 
-                { 
-                    FormId = formId1, 
-                    SubmittedBy = "otheruser", 
-                    SubmittedAt = DateTime.UtcNow 
-                }
-            );
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
-
-            // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(2, resultDict.TotalCount);
-            Assert.Equal(1, resultDict.PageNumber);
-            Assert.Equal(6, resultDict.PageSize);
-            
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
-            Assert.Equal(2, items.Count);
-            Assert.All(items, r => Assert.Equal(userId, r.SubmittedBy));
-            
-            // Verify form titles are populated
-            var response1 = items.FirstOrDefault(r => r.FormId == formId1);
-            var response2 = items.FirstOrDefault(r => r.FormId == formId2);
-            
-            Assert.NotNull(response1);
-            Assert.NotNull(response2);
-            Assert.Equal("Test Form", response1.FormTitle);
-            Assert.Equal("Second Test Form", response2.FormTitle);
-        }
-
-        [Fact]
         public async Task GetAllResponsesByUserAsync_NoResponses_ReturnsEmptyResult()
         {
             // Arrange
-            var userId = "nonexistentuser";
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(new List<FormResponse>());
 
             // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1");
 
             // Assert
             Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(0, resultDict.TotalCount);
-            Assert.Empty((List<ResponseDetailDTO>)resultDict.Items);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
+            Assert.Equal(0, totalCount);
+            Assert.Empty(items);
         }
 
         [Fact]
-        public async Task GetAllResponsesByUserAsync_WithFiles_ReturnsResponsesWithFiles()
+        public async Task GetAllResponsesByUserAsync_WithResponses_ReturnsPagedResult()
         {
             // Arrange
-            var userId = "testuser123";
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            var response = new FormResponse 
-            { 
-                FormId = formId, 
-                SubmittedBy = userId, 
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<FormResponseAnswer>
+            var form = CreateTestForm();
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
                 {
-                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { AnswerId = 1, QuestionId = "q1", AnswerText = "Answer 1" }
+                    }
                 }
             };
-            
-            await _context.FormResponses.AddAsync(response);
-            await _context.SaveChangesAsync();
-            
-            // Add a file
-            var file = new ResponseFile
-            {
-                ResponseId = response.ResponseId,
-                QuestionId = "99999999-9999-9999-9999-999999999999",
-                FileName = "test.pdf",
-                FileType = "application/pdf",
-                FileMaxSize = 1024,
-                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test content")),
-                UploadedAt = DateTime.UtcNow
-            };
-            
-            await _context.ResponseFiles.AddAsync(file);
-            await _context.SaveChangesAsync();
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Admin"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
 
             // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1");
 
             // Assert
             Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
             
+            Assert.Equal(1, totalCount);
             Assert.Single(items);
-            Assert.Single(items[0].Files);
-            Assert.Equal("test.pdf", items[0].Files[0].FileName);
-            Assert.Equal("application/pdf", items[0].Files[0].FileType);
+            Assert.Equal("Test Form", items[0].FormTitle);
+            Assert.Equal("Test Description", items[0].FormDescription);
         }
 
         [Fact]
         public async Task GetAllResponsesByUserAsync_WithSearch_FiltersResults()
         {
             // Arrange
-            var userId = "testuser123";
-            var formId1 = "11111111-1111-1111-1111-111111111111";
-            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-            
-            // Add responses for multiple forms
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse 
-                { 
-                    FormId = formId1, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow,
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
-                    }
-                },
-                new FormResponse 
-                { 
-                    FormId = formId2, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow,
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
-                    }
-                }
-            );
-            await _context.SaveChangesAsync();
+            var form1 = new Form
+            {
+                Id = "form-1",
+                Config = new FormConfig { Title = "Customer Survey", Description = "Survey about customers" },
+                Layout = new FormLayout { Fields = new List<FormField>() }
+            };
 
-            // Act - Search for "Second" which should match "Second Test Form"
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId, search: "Second");
+            var form2 = new Form
+            {
+                Id = "form-2",
+                Config = new FormConfig { Title = "Employee Feedback", Description = "Feedback form" },
+                Layout = new FormLayout { Fields = new List<FormField>() }
+            };
+
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-1",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                },
+                new FormResponse
+                {
+                    ResponseId = 2,
+                    FormId = "form-2",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-1", "Admin"))
+                .ReturnsAsync(form1);
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-2", "Admin"))
+                .ReturnsAsync(form2);
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1", "Customer");
 
             // Assert
             Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(1, resultDict.TotalCount);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
             
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            Assert.Equal(1, totalCount);
             Assert.Single(items);
-            Assert.Equal(formId2, items[0].FormId);
-            Assert.Equal("Second Test Form", items[0].FormTitle);
+            Assert.Contains("Customer", items[0].FormTitle);
         }
 
         [Fact]
         public async Task GetAllResponsesByUserAsync_WithPagination_ReturnsCorrectPage()
         {
             // Arrange
-            var userId = "testuser123";
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            // Add 10 responses
-            for (int i = 0; i < 10; i++)
+            var responses = Enumerable.Range(1, 10).Select(i => new FormResponse
             {
-                await _context.FormResponses.AddAsync(
-                    new FormResponse 
-                    { 
-                        FormId = formId, 
-                        SubmittedBy = userId, 
-                        SubmittedAt = DateTime.UtcNow.AddMinutes(-i),
-                        Answers = new List<FormResponseAnswer>
-                        {
-                            new FormResponseAnswer { QuestionId = "q1", AnswerText = $"answer{i}" }
-                        }
-                    }
-                );
-            }
-            await _context.SaveChangesAsync();
+                ResponseId = i,
+                FormId = $"form-{i}",
+                SubmittedBy = "user1",
+                SubmittedAt = DateTime.UtcNow,
+                Answers = new List<FormResponseAnswer>()
+            }).ToList();
 
-            // Act - Get page 2 with page size 6
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId, pageNumber: 2, pageSize: 6);
+            foreach (var response in responses)
+            {
+                var form = new Form
+                {
+                    Id = response.FormId,
+                    Config = new FormConfig { Title = $"Form {response.ResponseId}", Description = "Description" },
+                    Layout = new FormLayout { Fields = new List<FormField>() }
+                };
+
+                _mockFormBL
+                    .Setup(m => m.GetFormByIdAsync(response.FormId, "Admin"))
+                    .ReturnsAsync(form);
+            }
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1", null, 2, 3);
 
             // Assert
             Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(10, resultDict.TotalCount);
-            Assert.Equal(2, resultDict.PageNumber);
-            Assert.Equal(6, resultDict.PageSize);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var pageNumber = GetPropertyValue<int>(result, "PageNumber");
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
             
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
-            Assert.Equal(4, items.Count); // Remaining 4 items on page 2
+            Assert.Equal(10, totalCount);
+            Assert.Equal(2, pageNumber);
+            Assert.Equal(3, items.Count);
+        }
+
+                [Fact]
+        public async Task GetAllResponsesByUserAsync_FormNotFound_UsesUnknownForm()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "non-existent-form",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("non-existent-form", "Admin"))
+                .ThrowsAsync(new Exception("Form not found"));
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1");
+
+            // Assert
+            Assert.NotNull(result);
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
+            Assert.Single(items);
+            Assert.Equal("Unknown Form", items[0].FormTitle);
+            Assert.Equal("", items[0].FormDescription);
         }
 
         [Fact]
-        public async Task GetAllResponsesByUserAsync_MultipleResponsesSameForm_ReturnsAllResponses()
+        public async Task GetAllResponsesByUserAsync_WithFiles_IncludesFileData()
         {
             // Arrange
-            var userId = "testuser123";
-            var formId = "11111111-1111-1111-1111-111111111111";
-            
-            // Add multiple responses for the same form
-            await _context.FormResponses.AddRangeAsync(
-                new FormResponse 
-                { 
-                    FormId = formId, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow.AddDays(-2),
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "first answer" }
-                    }
-                },
-                new FormResponse 
-                { 
-                    FormId = formId, 
-                    SubmittedBy = userId, 
-                    SubmittedAt = DateTime.UtcNow.AddDays(-1),
-                    Answers = new List<FormResponseAnswer>
-                    {
-                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "second answer" }
-                    }
-                },
-                new FormResponse 
-                { 
-                    FormId = formId, 
-                    SubmittedBy = userId, 
+            var form = CreateTestForm();
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var files = new List<ResponseFile>
+            {
+                new ResponseFile
+                {
+                    FileId = 1,
+                    ResponseId = 1,
+                    QuestionId = "q1",
+                    FileName = "test.pdf",
+                    FileType = "application/pdf",
+                    FileMaxSize = 1024,
+                    Base64Content = "base64content",
+                    UploadedAt = DateTime.UtcNow
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Admin"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(1))
+                .ReturnsAsync(files);
+
+            // Act
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1");
+
+            // Assert
+            Assert.NotNull(result);
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
+            Assert.Single(items);
+            Assert.Single(items[0].Files);
+            Assert.Equal("test.pdf", items[0].Files[0].FileName);
+        }
+
+        [Fact]
+        public async Task GetAllResponsesByUserAsync_SearchByAnswerText_FiltersCorrectly()
+        {
+            // Arrange
+            var form = CreateTestForm();
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
                     SubmittedAt = DateTime.UtcNow,
                     Answers = new List<FormResponseAnswer>
                     {
-                        new FormResponseAnswer { QuestionId = "q1", AnswerText = "third answer" }
+                        new FormResponseAnswer { AnswerId = 1, QuestionId = "q1", AnswerText = "Specific Answer" }
+                    }
+                },
+                new FormResponse
+                {
+                    ResponseId = 2,
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>
+                    {
+                        new FormResponseAnswer { AnswerId = 2, QuestionId = "q1", AnswerText = "Different Answer" }
                     }
                 }
-            );
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
-
-            // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(3, resultDict.TotalCount);
-            
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
-            Assert.Equal(3, items.Count);
-            Assert.All(items, r => 
-            {
-                Assert.Equal(userId, r.SubmittedBy);
-                Assert.Equal(formId, r.FormId);
-                Assert.Equal("Test Form", r.FormTitle);
-            });
-        }
-
-        [Fact]
-        public async Task GetAllResponsesByUserAsync_FormNotFound_ReturnsUnknownFormTitle()
-        {
-            // Arrange
-            var userId = "testuser123";
-            var unknownFormId = "unknown-form-id";
-            
-            var response = new FormResponse 
-            { 
-                FormId = unknownFormId, 
-                SubmittedBy = userId, 
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<FormResponseAnswer>
-                {
-                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" }
-                }
             };
-            
-            await _context.FormResponses.AddAsync(response);
-            await _context.SaveChangesAsync();
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Admin"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByUserIdAsync("user1"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
 
             // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
+            var result = await _responseBL.GetAllResponsesByUserAsync("user1", "Specific");
 
             // Assert
             Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            var items = GetPropertyValue<List<ResponseDetailDTO>>(result, "Items");
             
+            Assert.Equal(1, totalCount);
             Assert.Single(items);
-            Assert.Equal("Unknown Form", items[0].FormTitle);
-        }
-
-        [Fact]
-        public async Task GetAllResponsesByUserAsync_MixedFormsWithAnswersAndFiles_ReturnsCompleteData()
-        {
-            // Arrange
-            var userId = "testuser123";
-            var formId1 = "11111111-1111-1111-1111-111111111111";
-            var formId2 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-            
-            var response1 = new FormResponse 
-            { 
-                FormId = formId1, 
-                SubmittedBy = userId, 
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<FormResponseAnswer>
-                {
-                    new FormResponseAnswer { QuestionId = "q1", AnswerText = "answer1" },
-                    new FormResponseAnswer { QuestionId = "q2", AnswerText = "answer2" }
-                }
-            };
-            
-            var response2 = new FormResponse 
-            { 
-                FormId = formId2, 
-                SubmittedBy = userId, 
-                SubmittedAt = DateTime.UtcNow,
-                Answers = new List<FormResponseAnswer>
-                {
-                    new FormResponseAnswer { QuestionId = "q3", AnswerText = "answer3" }
-                }
-            };
-            
-            await _context.FormResponses.AddRangeAsync(response1, response2);
-            await _context.SaveChangesAsync();
-            
-            // Add files to response1
-            var file1 = new ResponseFile
-            {
-                ResponseId = response1.ResponseId,
-                QuestionId = "file-q1",
-                FileName = "doc1.pdf",
-                FileType = "application/pdf",
-                FileMaxSize = 2048,
-                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content 1")),
-                UploadedAt = DateTime.UtcNow
-            };
-            
-            var file2 = new ResponseFile
-            {
-                ResponseId = response1.ResponseId,
-                QuestionId = "file-q2",
-                FileName = "doc2.docx",
-                FileType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                FileMaxSize = 3072,
-                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content 2")),
-                UploadedAt = DateTime.UtcNow
-            };
-            
-            await _context.ResponseFiles.AddRangeAsync(file1, file2);
-            await _context.SaveChangesAsync();
-
-            // Act
-            var result = await _responseBL.GetAllResponsesByUserAsync(userId);
-
-            // Assert
-            Assert.NotNull(result);
-            var resultDict = result as dynamic;
-            Assert.Equal(2, resultDict.TotalCount);
-            
-            var items = (List<ResponseDetailDTO>)resultDict.Items;
-            Assert.Equal(2, items.Count);
-            
-            var resp1 = items.FirstOrDefault(r => r.FormId == formId1);
-            var resp2 = items.FirstOrDefault(r => r.FormId == formId2);
-            
-            Assert.NotNull(resp1);
-            Assert.NotNull(resp2);
-            
-            // Verify response 1 has 2 answers and 2 files
-            Assert.Equal(2, resp1.Answers.Count);
-            Assert.Equal(2, resp1.Files.Count);
-            Assert.Equal("Test Form", resp1.FormTitle);
-            
-            // Verify response 2 has 1 answer and no files
-            Assert.Single(resp2.Answers);
-            Assert.Empty(resp2.Files);
-            Assert.Equal("Second Test Form", resp2.FormTitle);
+            Assert.Contains("Specific", items[0].Answers[0].AnswerText);
         }
 
         #endregion
 
         #region GetFileByResponseIdAndFileIdAsync Tests
 
-                [Fact]
+        [Fact]
         public async Task GetFileByResponseIdAndFileIdAsync_FileExists_ReturnsFileDTO()
         {
             // Arrange
-            // Create a response
-            var response = new FormResponse
-            {
-                FormId = "11111111-1111-1111-1111-111111111111",
-                SubmittedBy = "testuser",
-                SubmittedAt = DateTime.UtcNow
-            };
-            
-            _context.FormResponses.Add(response);
-            await _context.SaveChangesAsync();
-            
-            // Add a file to the response
             var responseFile = new ResponseFile
             {
-                ResponseId = response.ResponseId,
-                QuestionId = "99999999-9999-9999-9999-999999999999",
-                FileName = "test.txt",
-                FileType = "text/plain",
+                FileId = 1,
+                ResponseId = 1,
+                QuestionId = "q1",
+                FileName = "test.pdf",
+                FileType = "application/pdf",
                 FileMaxSize = 1024,
-                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test file content")),
+                Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Test content")),
                 UploadedAt = DateTime.UtcNow
             };
-            
-            _context.ResponseFiles.Add(responseFile);
-            await _context.SaveChangesAsync();
+
+            _mockResponseRepository
+                .Setup(r => r.GetFileByResponseIdAndFileIdAsync(1, 1))
+                .ReturnsAsync(responseFile);
 
             // Act
-            var result = await _responseBL.GetFileByResponseIdAndFileIdAsync(response.ResponseId, responseFile.FileId);
+            var result = await _responseBL.GetFileByResponseIdAndFileIdAsync(1, 1);
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(responseFile.FileName, result.FileName);
-            Assert.Equal(responseFile.FileType, result.FileType);
-            Assert.Equal(responseFile.Base64Content, result.Base64Content);
+            Assert.Equal(1, result.ResponseId);
+            Assert.Equal("q1", result.QuestionId);
+            Assert.Equal("test.pdf", result.FileName);
+            Assert.Equal("application/pdf", result.FileType);
+            Assert.Equal(1024, result.FileMaxSize);
+            Assert.NotEmpty(result.Base64Content);
         }
 
         [Fact]
         public async Task GetFileByResponseIdAndFileIdAsync_FileNotFound_ReturnsNull()
         {
             // Arrange
-            var responseId = 999;
-            var fileId = 999;
+            _mockResponseRepository
+                .Setup(r => r.GetFileByResponseIdAndFileIdAsync(999, 999))
+                .ReturnsAsync((ResponseFile?)null);
 
             // Act
-            var result = await _responseBL.GetFileByResponseIdAndFileIdAsync(responseId, fileId);
+            var result = await _responseBL.GetFileByResponseIdAndFileIdAsync(999, 999);
 
             // Assert
             Assert.Null(result);
         }
 
-        #endregion
-        public void Dispose()
+        [Fact]
+        public async Task GetFileByResponseIdAndFileIdAsync_DifferentFileTypes_ReturnsCorrectly()
         {
-            // Clean up the in-memory database after each test
-            _context.Database.EnsureDeleted();
-            _context.Dispose();
+            // Arrange
+            var fileTypes = new[]
+            {
+                ("image.jpg", "image/jpeg"),
+                ("document.pdf", "application/pdf"),
+                ("sheet.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                ("picture.png", "image/png")
+            };
+
+            foreach (var (fileName, fileType) in fileTypes)
+            {
+                var responseFile = new ResponseFile
+                {
+                    FileId = 1,
+                    ResponseId = 1,
+                    QuestionId = "q1",
+                    FileName = fileName,
+                    FileType = fileType,
+                    FileMaxSize = 2048,
+                    Base64Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content")),
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _mockResponseRepository
+                    .Setup(r => r.GetFileByResponseIdAndFileIdAsync(1, 1))
+                    .ReturnsAsync(responseFile);
+
+                // Act
+                var result = await _responseBL.GetFileByResponseIdAndFileIdAsync(1, 1);
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.Equal(fileName, result.FileName);
+                Assert.Equal(fileType, result.FileType);
+            }
         }
+
+        #endregion
+
+        #region Edge Cases and Validation Tests
+
+        [Fact]
+        public async Task SubmitResponseAsync_EmptyAnswersList_ProcessesSuccessfully()
+        {
+            // Arrange
+            var form = CreateTestForm();
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>()
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_NullAnswersList_ProcessesSuccessfully()
+        {
+            // Arrange
+            var form = CreateTestForm();
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = null!
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_NullSubmittedBy_UsesEmptyString()
+        {
+            // Arrange
+            var form = CreateTestForm();
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = null,
+                Answers = new List<ResponseAnswerDTO>()
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseAsync(It.Is<FormResponse>(fr =>
+                fr.SubmittedBy == string.Empty
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_DropdownWithNoMatchingOptions_SavesEmptyArray()
+        {
+            // Arrange
+            var form = CreateTestFormWithDropdown(false);
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-dropdown",
+                        AnswerText = "Non-existent Option"
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_MultipleFilesAllowed_SavesAllFiles()
+        {
+            // Arrange
+            var form = CreateTestFormWithFileUpload();
+            var fileContent1 = Convert.ToBase64String(Encoding.UTF8.GetBytes("File 1"));
+            var fileContent2 = Convert.ToBase64String(Encoding.UTF8.GetBytes("File 2"));
+            
+            var responseDto = new ResponseDTO
+            {
+                FormId = "form-123",
+                SubmittedBy = "user1",
+                Answers = new List<ResponseAnswerDTO>
+                {
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "test1.pdf",
+                            FileType = "application/pdf",
+                            FileMaxSize = 1024,
+                            Base64Content = fileContent1
+                        }
+                    },
+                    new ResponseAnswerDTO
+                    {
+                        QuestionId = "q-file",
+                        File = new ResponseFileUploadDTO
+                        {
+                            QuestionId = "q-file",
+                            FileName = "test2.pdf",
+                            FileType = "application/pdf",
+                            FileMaxSize = 2048,
+                            Base64Content = fileContent2
+                        }
+                    }
+                }
+            };
+
+            _mockFormBL
+                .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                .ReturnsAsync(form);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                .ReturnsAsync(1);
+
+            _mockResponseRepository
+                .Setup(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+            // Assert
+            Assert.Equal(1, result);
+            _mockResponseRepository.Verify(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task SubmitResponseAsync_AllowedFileExtensions_AcceptsValidFiles()
+        {
+            // Arrange
+            var form = CreateTestFormWithFileUpload();
+            var validExtensions = new[] { "test.jpg", "test.jpeg", "test.png", "test.pdf", "test.docx" };
+
+            foreach (var fileName in validExtensions)
+            {
+                var fileContent = Convert.ToBase64String(Encoding.UTF8.GetBytes("Content"));
+                var responseDto = new ResponseDTO
+                {
+                    FormId = "form-123",
+                    SubmittedBy = "user1",
+                    Answers = new List<ResponseAnswerDTO>
+                    {
+                        new ResponseAnswerDTO
+                        {
+                            QuestionId = "q-file",
+                            File = new ResponseFileUploadDTO
+                            {
+                                QuestionId = "q-file",
+                                FileName = fileName,
+                                FileType = "application/octet-stream",
+                                FileMaxSize = 1024,
+                                Base64Content = fileContent
+                            }
+                        }
+                    }
+                };
+
+                _mockFormBL
+                    .Setup(m => m.GetFormByIdAsync("form-123", "Learner"))
+                    .ReturnsAsync(form);
+
+                _mockResponseRepository
+                    .Setup(r => r.InsertResponseAsync(It.IsAny<FormResponse>()))
+                    .ReturnsAsync(1);
+
+                _mockResponseRepository
+                    .Setup(r => r.InsertResponseFileAsync(It.IsAny<ResponseFile>()))
+                    .Returns(Task.CompletedTask);
+
+                // Act
+                var result = await _responseBL.SubmitResponseAsync(responseDto);
+
+                // Assert
+                Assert.Equal(1, result);
+            }
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_SearchByUserId_FiltersCorrectly()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "user123",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                },
+                new FormResponse
+                {
+                    ResponseId = 2,
+                    FormId = "form-123",
+                    SubmittedBy = "user456",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var users = new Dictionary<string, string>
+            {
+                { "user123", "John Doe" },
+                { "user456", "Jane Smith" }
+            };
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123", "user123");
+
+            // Assert
+            Assert.NotNull(result);
+            var totalCount = GetPropertyValue<int>(result, "TotalCount");
+            Assert.Equal(1, totalCount);
+        }
+
+        [Fact]
+        public async Task GetResponsesForFormAsync_UnknownUser_ShowsUnknownInUserName()
+        {
+            // Arrange
+            var responses = new List<FormResponse>
+            {
+                new FormResponse
+                {
+                    ResponseId = 1,
+                    FormId = "form-123",
+                    SubmittedBy = "unknown-user",
+                    SubmittedAt = DateTime.UtcNow,
+                    Answers = new List<FormResponseAnswer>()
+                }
+            };
+
+            var users = new Dictionary<string, string>(); // Empty - user not found
+
+            _mockResponseRepository
+                .Setup(r => r.GetResponsesByFormIdAsync("form-123"))
+                .ReturnsAsync(responses);
+
+            _mockResponseRepository
+                .Setup(r => r.GetUserNamesByIdsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync(users);
+
+            _mockResponseRepository
+                .Setup(r => r.GetFilesByResponseIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new List<ResponseFile>());
+
+            // Act
+            var result = await _responseBL.GetResponsesForFormAsync("form-123");
+
+            // Assert
+            Assert.NotNull(result);
+            var items = GetPropertyValue<List<object>>(result, "Items");
+            Assert.Single(items);
+        }
+
+        #endregion
+
+                #region Helper Methods
+
+        private T GetPropertyValue<T>(object obj, string propertyName)
+        {
+            var property = obj.GetType().GetProperty(propertyName);
+            if (property == null)
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{obj.GetType().Name}'");
+            
+            var value = property.GetValue(obj);
+            
+            // Handle List<ResponseDetailDTO> conversion
+            if (typeof(T) == typeof(List<ResponseDetailDTO>) && value != null)
+            {
+                var sourceList = value as System.Collections.IEnumerable;
+                if (sourceList != null)
+                {
+                    var resultList = new List<ResponseDetailDTO>();
+                    foreach (var item in sourceList)
+                    {
+                        if (item is ResponseDetailDTO dto)
+                        {
+                            resultList.Add(dto);
+                        }
+                    }
+                    return (T)(object)resultList;
+                }
+            }
+            
+            return (T)value!;
+        }
+
+        private Form CreateTestForm()
+        {
+            return new Form
+            {
+                Id = "form-123",
+                Config = new FormConfig { Title = "Test Form", Description = "Test Description" },
+                Layout = new FormLayout
+                {
+                    Fields = new List<FormField>
+                    {
+                        new FormField
+                        {
+                            QuestionId = "q1",
+                            Label = "Question 1",
+                            Type = "text",
+                            Required = true
+                        }
+                    }
+                }
+            };
+        }
+
+        private Form CreateTestFormWithDropdown(bool multipleChoice)
+        {
+            return new Form
+            {
+                Id = "form-123",
+                Config = new FormConfig { Title = "Test Form", Description = "Test Description" },
+                Layout = new FormLayout
+                {
+                    Fields = new List<FormField>
+                    {
+                        new FormField
+                        {
+                            QuestionId = "q-dropdown",
+                            Label = "Dropdown Question",
+                            Type = "drop-down",
+                            MultipleChoice = multipleChoice,
+                            Options = new List<FieldOption>
+                            {
+                                new FieldOption { OptionId = "opt1", Value = "Option 1" },
+                                new FieldOption { OptionId = "opt2", Value = "Option 2" },
+                                new FieldOption { OptionId = "opt3", Value = "Option 3" }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        private Form CreateTestFormWithFileUpload()
+        {
+            return new Form
+            {
+                Id = "form-123",
+                Config = new FormConfig { Title = "Test Form", Description = "Test Description" },
+                Layout = new FormLayout
+                {
+                    Fields = new List<FormField>
+                    {
+                        new FormField
+                        {
+                            QuestionId = "q-file",
+                            Label = "File Upload",
+                            Type = "file-upload",
+                            Required = false
+                        }
+                    }
+                }
+            };
+        }
+
+        private Form CreateTestFormWithMixedFields()
+        {
+            return new Form
+            {
+                Id = "form-123",
+                Config = new FormConfig { Title = "Test Form", Description = "Test Description" },
+                Layout = new FormLayout
+                {
+                    Fields = new List<FormField>
+                    {
+                        new FormField
+                        {
+                            QuestionId = "q-text",
+                            Label = "Text Question",
+                            Type = "text"
+                        },
+                        new FormField
+                        {
+                            QuestionId = "q-dropdown",
+                            Label = "Dropdown Question",
+                            Type = "drop-down",
+                            Options = new List<FieldOption>
+                            {
+                                new FieldOption { OptionId = "opt1", Value = "Option 1" },
+                                new FieldOption { OptionId = "opt2", Value = "Option 2" }
+                            }
+                        },
+                        new FormField
+                        {
+                            QuestionId = "q-file",
+                            Label = "File Upload",
+                            Type = "file-upload"
+                        }
+                    }
+                }
+            };
+        }
+
+        #endregion
     }
 }

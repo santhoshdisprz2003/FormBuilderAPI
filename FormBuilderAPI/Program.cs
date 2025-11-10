@@ -1,5 +1,6 @@
 using FormBuilderAPI.BusinessLogicLayer;
 using FormBuilderAPI.DataAccessLayer;
+using FormBuilderAPI.Repository;
 using FormBuilderAPI.Helper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,14 @@ builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<IAuthBL, AuthBL>();
 builder.Services.AddScoped<IFormBL, FormBL>();
 builder.Services.AddScoped<IResponseBL, ResponseBL>();
+
+// Register all repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IFormRepository, FormRepository>();
+builder.Services.AddScoped<IResponseRepository, ResponseRepository>();
+
+
+
 // builder.Services.AddScoped<IAuditBL, AuditBL>();
 // ===============================
 // 4️⃣  HELPERS

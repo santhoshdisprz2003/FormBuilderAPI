@@ -32,7 +32,7 @@
   </ItemGroup>
 
     <ItemGroup>
-    <Compile Remove="BusinessLogicTest\ResponseBLTest.cs" />
+    
     
   </ItemGroup>
 

@@ -22,8 +22,12 @@ namespace FormBuilderAPI.DataAccessLayer
             _database = client.GetDatabase(databaseName);
         }
 
-        // Main Forms collection
-        public IMongoCollection<Form> Forms => _database.GetCollection<Form>("Forms");
+        // Parameterless constructor for testing
+        protected MongoDbContext()
+        {
+        }
 
+        // Make virtual for mocking in tests
+        public virtual IMongoCollection<Form> Forms => _database?.GetCollection<Form>("Forms");
     }
 }

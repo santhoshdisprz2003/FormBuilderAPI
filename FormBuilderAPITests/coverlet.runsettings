@@ -2,23 +2,26 @@
 <RunSettings>
   <DataCollectionRunSettings>
     <DataCollectors>
-      <DataCollector friendlyName="XPlat code coverage">
+      <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <Format>cobertura</Format>
-          <Format>opencover</Format>
-
-          <!-- Exclude files -->
-          <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
-          <ExcludeByFile>FormBuilderAPI/Program.cs</ExcludeByFile>
+          <!-- Multiple formats in a single tag -->
+          <Format>cobertura,opencover,json,lcov</Format>
+          
+          <!-- Exclude assemblies/namespaces -->
+          <Exclude>[*.Tests]*,[*.Tests?]*</Exclude>
+          
+          <!-- Exclude by file path (use ** for recursive) -->
+          <ExcludeByFile>**/Migrations/**/*.cs</ExcludeByFile>
+          <ExcludeByFile>**/Program.cs</ExcludeByFile>
           <ExcludeByFile>**/Startup.cs</ExcludeByFile>
 
-          <!-- Exclude types/classes -->
-          <ExcludeByType>Program</ExcludeByType>
-
-          <!-- Optional: exclude auto-generated code -->
-          <ExcludeByAttribute>CompilerGeneratedAttribute</ExcludeByAttribute>
-          <ExcludeByAttribute>GeneratedCodeAttribute</ExcludeByAttribute>
-
+          <!-- <ExcludeByFile>**/DataAccessLayer/MongoDbContext.cs</ExcludeByFile> -->
+          
+          <!-- Exclude by attribute -->
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          
+          <!-- Include only your main project -->
+          <Include>[FormBuilderAPI]*</Include>
         </Configuration>
       </DataCollector>
     </DataCollectors>

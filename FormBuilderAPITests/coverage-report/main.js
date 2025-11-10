@@ -213,17 +213,20 @@ var assemblies = [
   {
     "name": "FormBuilderAPI",
     "classes": [
-      { "name": "FormBuilderAPI.BusinessLogicLayer.AuthBL", "rp": "FormBuilderAPI_AuthBL.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 95, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FormBuilderAPI.BusinessLogicLayer.FormBL", "rp": "FormBuilderAPI_FormBL.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 249, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FormBuilderAPI.BusinessLogicLayer.ResponseBL", "rp": "FormBuilderAPI_ResponseBL.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 367, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.BusinessLogicLayer.AuthBL", "rp": "FormBuilderAPI_AuthBL.html", "cl": 49, "ucl": 0, "cal": 49, "tl": 150, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.BusinessLogicLayer.FormBL", "rp": "FormBuilderAPI_FormBL.html", "cl": 30, "ucl": 0, "cal": 30, "tl": 145, "cb": 2, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.BusinessLogicLayer.ResponseBL", "rp": "FormBuilderAPI_ResponseBL.html", "cl": 126, "ucl": 0, "cal": 126, "tl": 441, "cb": 16, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.Controllers.AdminController", "rp": "FormBuilderAPI_AdminController.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 45, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.Controllers.AuthController", "rp": "FormBuilderAPI_AuthController.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 86, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FormBuilderAPI.Controllers.FormController", "rp": "FormBuilderAPI_FormController.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 195, "cb": 4, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.Controllers.FormController", "rp": "FormBuilderAPI_FormController.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 195, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.Controllers.ResponseController", "rp": "FormBuilderAPI_ResponseController.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 117, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FormBuilderAPI.DataAccessLayer.MongoDbContext", "rp": "FormBuilderAPI_MongoDbContext.html", "cl": 0, "ucl": 11, "cal": 11, "tl": 29, "cb": 0, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.DataAccessLayer.MongoDbContext", "rp": "FormBuilderAPI_MongoDbContext.html", "cl": 14, "ucl": 0, "cal": 14, "tl": 33, "cb": 5, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.DataAccessLayer.SQLDbContext", "rp": "FormBuilderAPI_SQLDbContext.html", "cl": 45, "ucl": 0, "cal": 45, "tl": 70, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.Helper.JwtHelper", "rp": "FormBuilderAPI_JwtHelper.html", "cl": 45, "ucl": 0, "cal": 45, "tl": 69, "cb": 3, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FormBuilderAPI.Helper.PasswordHasher", "rp": "FormBuilderAPI_PasswordHasher.html", "cl": 35, "ucl": 0, "cal": 35, "tl": 68, "cb": 8, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.Repository.FormRepository", "rp": "FormBuilderAPI_FormRepository.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 138, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.Repository.ResponseRepository", "rp": "FormBuilderAPI_ResponseRepository.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 86, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FormBuilderAPI.Repository.UserRepository", "rp": "FormBuilderAPI_UserRepository.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 47, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 

@@ -1,40 +1,125 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using FormBuilderAPI.DataAccessLayer;
 using FormBuilderAPI.DTOs;
 using FormBuilderAPI.Helper;
 using FormBuilderAPI.Model.SQLModel;
-using Microsoft.EntityFrameworkCore;
-
+using FormBuilderAPI.Repository;
 using Microsoft.Extensions.Configuration;
 
 namespace FormBuilderAPI.BusinessLogicLayer
 {
     public class AuthBL : IAuthBL
     {
-        private readonly SQLDbContext _sqlContext;
+        private readonly IUserRepository _userRepository;
         private readonly JwtHelper _jwtHelper;
         private readonly PasswordHasher _passwordHasher;
 
-        public AuthBL(SQLDbContext sqlContext, IConfiguration config)
+        // Token expiration constant
+        private const int TOKEN_EXPIRATION_HOURS = 2;
+
+        public AuthBL(IUserRepository userRepository, IConfiguration config)
         {
-            _sqlContext = sqlContext;
+            _userRepository = userRepository;
             _jwtHelper = new JwtHelper(config);
             _passwordHasher = new PasswordHasher();
         }
 
-        // LOGIN
         public async Task<AuthResponseDTO?> LoginAsync(AuthDTO dto)
         {
-            var user = await _sqlContext.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
+            // Validate input
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                return null;
+
+            // Get user from repository
+            var user = await _userRepository.GetUserByUsernameAsync(dto.Username);
             if (user == null)
                 return null;
 
-            if (!_passwordHasher.VerifyPassword(dto.Password, user.PasswordHash))
+            // Verify password
+            if (!VerifyPassword(dto.Password, user.PasswordHash))
                 return null;
 
-            var token = _jwtHelper.GenerateToken(user.UserId.ToString(), user.Username, user.Role);
+            // Generate token and return response
+            return CreateAuthResponse(user);
+        }
+
+        public async Task<AuthResponseDTO?> RegisterAsync(AuthDTO dto)
+        {
+            // Validate input
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                return null;
+
+            // Check if user already exists
+            var userExists = await _userRepository.UserExistsAsync(dto.Username);
+            if (userExists)
+                return null;
+
+            // Create new user
+            var newUser = CreateNewUser(dto);
+
+            // Hash password
+            newUser.PasswordHash = HashPassword(dto.Password);
+
+            // Save user to repository
+            var savedUser = await _userRepository.InsertUserAsync(newUser);
+
+            // Generate token and return response
+            return CreateAuthResponse(savedUser);
+        }
+
+        public async Task<bool> ValidateTokenAsync(string token)
+        {
+            // Token validation logic can be implemented here
+            // For now, returning true as placeholder
+            return await Task.FromResult(true);
+        }
+
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return null;
+
+            return await _userRepository.GetUserByUsernameAsync(username);
+        }
+
+        #region Private Helper Methods
+
+        private User CreateNewUser(AuthDTO dto)
+        {
+            return new User
+            {
+                Username = dto.Username,
+                Role = DetermineUserRole(dto.Role),
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        private string DetermineUserRole(string? requestedRole)
+        {
+            // Default to "Learner" if no role specified or invalid role
+            if (string.IsNullOrWhiteSpace(requestedRole))
+                return "Learner";
+
+            // Validate role (only Admin or Learner allowed)
+            return requestedRole.Equals("Admin", StringComparison.OrdinalIgnoreCase) 
+                ? "Admin" 
+                : "Learner";
+        }
+
+        private string HashPassword(string password)
+        {
+            return _passwordHasher.HashPassword(password);
+        }
+
+        private bool VerifyPassword(string password, string passwordHash)
+        {
+            return _passwordHasher.VerifyPassword(password, passwordHash);
+        }
+
+        private AuthResponseDTO CreateAuthResponse(User user)
+        {
+            var token = GenerateToken(user);
+            var expirationTime = CalculateTokenExpiration();
 
             return new AuthResponseDTO
             {
@@ -42,54 +127,24 @@ namespace FormBuilderAPI.BusinessLogicLayer
                 Username = user.Username,
                 Role = user.Role,
                 Token = token,
-                ExpiresAt = DateTime.UtcNow.AddHours(2)
+                ExpiresAt = expirationTime
             };
         }
 
-        // ✅ REGISTER
-        public async Task<AuthResponseDTO?> RegisterAsync(AuthDTO dto)
+        private string GenerateToken(User user)
         {
-            var existingUser = await _sqlContext.Users
-                .FirstOrDefaultAsync(u => u.Username == dto.Username);
-
-            if (existingUser != null)
-                return null;
-
-            var hashed = _passwordHasher.HashPassword(dto.Password);
-            var newUser = new User
-            {
-                Username = dto.Username,
-                PasswordHash = hashed,
-                Role = dto.Role ?? "Learner"
-            };
-
-            _sqlContext.Users.Add(newUser);
-            await _sqlContext.SaveChangesAsync();
-
-            var token = _jwtHelper.GenerateToken(newUser.UserId.ToString(), newUser.Username, newUser.Role);
-
-            return new AuthResponseDTO
-            {
-                UserId = newUser.UserId.ToString(),
-                Username = newUser.Username,
-                Role = newUser.Role,
-                Token = token,
-                ExpiresAt = DateTime.UtcNow.AddHours(2)
-            };
+            return _jwtHelper.GenerateToken(
+                user.UserId.ToString(), 
+                user.Username, 
+                user.Role
+            );
         }
 
-        // ✅ Token validation placeholder
-        public async Task<bool> ValidateTokenAsync(string token)
+        private DateTime CalculateTokenExpiration()
         {
-            return await Task.FromResult(true);
+            return DateTime.UtcNow.AddHours(TOKEN_EXPIRATION_HOURS);
         }
 
-        public async Task<User?> GetUserByUsernameAsync(string username)
-        {
-            return await _sqlContext.Users
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
-        }
-
-
+        #endregion
     }
 }

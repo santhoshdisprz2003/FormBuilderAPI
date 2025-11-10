@@ -1,0 +1,1098 @@
+{
+  "FormBuilderAPI.dll": {
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Repository\\FormRepository.cs": {
+      "FormBuilderAPI.Repository.FormRepository": {
+        "System.Void FormBuilderAPI.Repository.FormRepository::.ctor(FormBuilderAPI.DataAccessLayer.MongoDbContext,FormBuilderAPI.DataAccessLayer.SQLDbContext)": {
+          "Lines": {
+            "17": 17,
+            "18": 17,
+            "19": 17,
+            "20": 17,
+            "21": 17
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Repository\\ResponseRepository.cs": {
+      "FormBuilderAPI.Repository.ResponseRepository": {
+        "System.Void FormBuilderAPI.Repository.ResponseRepository::.ctor(FormBuilderAPI.DataAccessLayer.SQLDbContext)": {
+          "Lines": {
+            "14": 26,
+            "15": 26,
+            "16": 26,
+            "17": 26
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Repository\\UserRepository.cs": {
+      "FormBuilderAPI.Repository.UserRepository": {
+        "System.Void FormBuilderAPI.Repository.UserRepository::.ctor(FormBuilderAPI.DataAccessLayer.SQLDbContext)": {
+          "Lines": {
+            "12": 29,
+            "13": 29,
+            "14": 29,
+            "15": 29
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Helper\\JwtHelper.cs": {
+      "FormBuilderAPI.Helper.JwtHelper": {
+        "System.String FormBuilderAPI.Helper.JwtHelper::GenerateToken(System.String,System.String,System.String)": {
+          "Lines": {
+            "20": 7,
+            "21": 7,
+            "22": 7,
+            "23": 7,
+            "24": 6,
+            "25": 6,
+            "26": 6,
+            "28": 6,
+            "29": 6,
+            "31": 6,
+            "32": 6,
+            "33": 6,
+            "34": 6,
+            "35": 6,
+            "36": 6,
+            "37": 6,
+            "39": 6,
+            "40": 6,
+            "41": 6,
+            "42": 6,
+            "43": 6,
+            "44": 6,
+            "46": 6,
+            "47": 6
+          },
+          "Branches": [
+            {
+              "Line": 22,
+              "Offset": 30,
+              "EndOffset": 32,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 22,
+              "Offset": 30,
+              "EndOffset": 44,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 6
+            }
+          ]
+        },
+        "Microsoft.IdentityModel.Tokens.TokenValidationParameters FormBuilderAPI.Helper.JwtHelper::GetValidationParameters()": {
+          "Lines": {
+            "50": 2,
+            "51": 2,
+            "52": 2,
+            "53": 2,
+            "54": 2,
+            "55": 2,
+            "57": 2,
+            "58": 2,
+            "59": 2,
+            "60": 2,
+            "61": 2,
+            "62": 2,
+            "63": 2,
+            "64": 2,
+            "65": 2,
+            "66": 2,
+            "67": 2
+          },
+          "Branches": [
+            {
+              "Line": 52,
+              "Offset": 30,
+              "EndOffset": 32,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 52,
+              "Offset": 30,
+              "EndOffset": 44,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            }
+          ]
+        },
+        "System.Void FormBuilderAPI.Helper.JwtHelper::.ctor(Microsoft.Extensions.Configuration.IConfiguration)": {
+          "Lines": {
+            "14": 20,
+            "15": 20,
+            "16": 20,
+            "17": 20
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Helper\\PasswordHasher.cs": {
+      "FormBuilderAPI.Helper.PasswordHasher": {
+        "System.String FormBuilderAPI.Helper.PasswordHasher::HashPassword(System.String)": {
+          "Lines": {
+            "17": 19,
+            "18": 19,
+            "19": 3,
+            "21": 16,
+            "22": 16,
+            "23": 16,
+            "25": 16,
+            "26": 16,
+            "27": 16,
+            "28": 16,
+            "29": 16,
+            "30": 16,
+            "32": 16,
+            "33": 16,
+            "34": 16,
+            "36": 16,
+            "37": 16
+          },
+          "Branches": [
+            {
+              "Line": 18,
+              "Offset": 11,
+              "EndOffset": 13,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 3
+            },
+            {
+              "Line": 18,
+              "Offset": 11,
+              "EndOffset": 24,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 16
+            }
+          ]
+        },
+        "System.Boolean FormBuilderAPI.Helper.PasswordHasher::VerifyPassword(System.String,System.String)": {
+          "Lines": {
+            "43": 10,
+            "44": 10,
+            "45": 4,
+            "47": 6,
+            "49": 5,
+            "50": 1,
+            "52": 4,
+            "53": 4,
+            "55": 4,
+            "56": 4,
+            "58": 4,
+            "59": 4,
+            "60": 4,
+            "61": 4,
+            "62": 4,
+            "63": 4,
+            "65": 4,
+            "66": 9
+          },
+          "Branches": [
+            {
+              "Line": 44,
+              "Offset": 7,
+              "EndOffset": 9,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 8
+            },
+            {
+              "Line": 44,
+              "Offset": 7,
+              "EndOffset": 17,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 44,
+              "Offset": 22,
+              "EndOffset": 24,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 4
+            },
+            {
+              "Line": 44,
+              "Offset": 22,
+              "EndOffset": 29,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 6
+            },
+            {
+              "Line": 49,
+              "Offset": 50,
+              "EndOffset": 52,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 49,
+              "Offset": 50,
+              "EndOffset": 57,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 4
+            }
+          ]
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\DataAccessLayer\\MongoDbContext.cs": {
+      "FormBuilderAPI.DataAccessLayer.MongoDbContext": {
+        "MongoDB.Driver.IMongoCollection`1<FormBuilderAPI.Model.MongoModel.Form> FormBuilderAPI.DataAccessLayer.MongoDbContext::get_Forms()": {
+          "Lines": {
+            "31": 19
+          },
+          "Branches": [
+            {
+              "Line": 31,
+              "Offset": 7,
+              "EndOffset": 9,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 31,
+              "Offset": 7,
+              "EndOffset": 13,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 19
+            }
+          ]
+        },
+        "System.Void FormBuilderAPI.DataAccessLayer.MongoDbContext::.ctor(Microsoft.Extensions.Configuration.IConfiguration)": {
+          "Lines": {
+            "11": 25,
+            "12": 25,
+            "13": 25,
+            "15": 25,
+            "16": 4,
+            "18": 21,
+            "19": 20,
+            "21": 20,
+            "22": 20,
+            "23": 20
+          },
+          "Branches": [
+            {
+              "Line": 15,
+              "Offset": 30,
+              "EndOffset": 32,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 4
+            },
+            {
+              "Line": 15,
+              "Offset": 30,
+              "EndOffset": 48,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 21
+            },
+            {
+              "Line": 21,
+              "Offset": 69,
+              "EndOffset": 71,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 2
+            },
+            {
+              "Line": 21,
+              "Offset": 69,
+              "EndOffset": 77,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 20
+            }
+          ]
+        },
+        "System.Void FormBuilderAPI.DataAccessLayer.MongoDbContext::.ctor()": {
+          "Lines": {
+            "26": 18,
+            "27": 18,
+            "28": 18
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\DataAccessLayer\\SQLDbContext.cs": {
+      "FormBuilderAPI.DataAccessLayer.SQLDbContext": {
+        "System.Void FormBuilderAPI.DataAccessLayer.SQLDbContext::OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder)": {
+          "Lines": {
+            "18": 1,
+            "19": 1,
+            "22": 1,
+            "23": 1,
+            "24": 1,
+            "25": 1,
+            "26": 1,
+            "27": 1,
+            "30": 1,
+            "31": 1,
+            "32": 1,
+            "33": 1,
+            "34": 1,
+            "35": 1,
+            "36": 1,
+            "37": 1,
+            "38": 1,
+            "39": 1,
+            "40": 1,
+            "43": 1,
+            "44": 1,
+            "45": 1,
+            "46": 1,
+            "47": 1,
+            "48": 1,
+            "49": 1,
+            "52": 1,
+            "53": 1,
+            "54": 1,
+            "55": 1,
+            "56": 1,
+            "57": 1,
+            "58": 1,
+            "59": 1,
+            "60": 1,
+            "61": 1,
+            "62": 1,
+            "63": 1,
+            "64": 1,
+            "65": 1,
+            "66": 1,
+            "68": 1
+          },
+          "Branches": []
+        },
+        "System.Void FormBuilderAPI.DataAccessLayer.SQLDbContext::.ctor(Microsoft.EntityFrameworkCore.DbContextOptions`1<FormBuilderAPI.DataAccessLayer.SQLDbContext>)": {
+          "Lines": {
+            "8": 72,
+            "9": 72,
+            "10": 72
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Controllers\\AdminController .cs": {
+      "FormBuilderAPI.Controllers.AdminController": {
+        "System.Void FormBuilderAPI.Controllers.AdminController::.ctor(FormBuilderAPI.BusinessLogicLayer.IFormBL,FormBuilderAPI.BusinessLogicLayer.IResponseBL)": {
+          "Lines": {
+            "18": 10,
+            "19": 10,
+            "20": 10,
+            "21": 9,
+            "22": 8
+          },
+          "Branches": [
+            {
+              "Line": 20,
+              "Offset": 11,
+              "EndOffset": 13,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 20,
+              "Offset": 11,
+              "EndOffset": 25,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 9
+            },
+            {
+              "Line": 21,
+              "Offset": 33,
+              "EndOffset": 35,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 21,
+              "Offset": 33,
+              "EndOffset": 47,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 8
+            }
+          ]
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Controllers\\AuthController.cs": {
+      "FormBuilderAPI.Controllers.AuthController": {
+        "System.Void FormBuilderAPI.Controllers.AuthController::.ctor(FormBuilderAPI.BusinessLogicLayer.IAuthBL)": {
+          "Lines": {
+            "16": 8,
+            "17": 8,
+            "18": 8,
+            "19": 8
+          },
+          "Branches": [
+            {
+              "Line": 18,
+              "Offset": 11,
+              "EndOffset": 13,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 18,
+              "Offset": 11,
+              "EndOffset": 25,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 8
+            }
+          ]
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Controllers\\FormController.cs": {
+      "FormBuilderAPI.Controllers.FormController": {
+        "System.Void FormBuilderAPI.Controllers.FormController::.ctor(FormBuilderAPI.BusinessLogicLayer.IFormBL)": {
+          "Lines": {
+            "20": 33,
+            "21": 33,
+            "22": 33,
+            "23": 32
+          },
+          "Branches": [
+            {
+              "Line": 22,
+              "Offset": 11,
+              "EndOffset": 13,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 22,
+              "Offset": 11,
+              "EndOffset": 25,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 32
+            }
+          ]
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\Controllers\\ResponseController.cs": {
+      "FormBuilderAPI.Controllers.ResponseController": {
+        "System.Void FormBuilderAPI.Controllers.ResponseController::.ctor(FormBuilderAPI.BusinessLogicLayer.IResponseBL)": {
+          "Lines": {
+            "17": 21,
+            "18": 21,
+            "19": 21,
+            "20": 20
+          },
+          "Branches": [
+            {
+              "Line": 19,
+              "Offset": 11,
+              "EndOffset": 13,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 19,
+              "Offset": 11,
+              "EndOffset": 25,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 20
+            }
+          ]
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\BusinessLogic\\AuthBL.cs": {
+      "FormBuilderAPI.BusinessLogicLayer.AuthBL": {
+        "FormBuilderAPI.Model.SQLModel.User FormBuilderAPI.BusinessLogicLayer.AuthBL::CreateNewUser(FormBuilderAPI.DTOs.AuthDTO)": {
+          "Lines": {
+            "88": 3,
+            "89": 3,
+            "90": 3,
+            "91": 3,
+            "92": 3,
+            "93": 3,
+            "94": 3,
+            "95": 3
+          },
+          "Branches": []
+        },
+        "System.String FormBuilderAPI.BusinessLogicLayer.AuthBL::DetermineUserRole(System.String)": {
+          "Lines": {
+            "98": 3,
+            "100": 3,
+            "101": 1,
+            "104": 2,
+            "105": 2,
+            "106": 2,
+            "107": 3
+          },
+          "Branches": [
+            {
+              "Line": 100,
+              "Offset": 9,
+              "EndOffset": 11,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 100,
+              "Offset": 9,
+              "EndOffset": 19,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 104,
+              "Offset": 31,
+              "EndOffset": 33,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 104,
+              "Offset": 31,
+              "EndOffset": 40,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 1
+            }
+          ]
+        },
+        "System.String FormBuilderAPI.BusinessLogicLayer.AuthBL::HashPassword(System.String)": {
+          "Lines": {
+            "110": 3,
+            "111": 3,
+            "112": 3
+          },
+          "Branches": []
+        },
+        "System.Boolean FormBuilderAPI.BusinessLogicLayer.AuthBL::VerifyPassword(System.String,System.String)": {
+          "Lines": {
+            "115": 2,
+            "116": 2,
+            "117": 2
+          },
+          "Branches": []
+        },
+        "FormBuilderAPI.DTOs.AuthResponseDTO FormBuilderAPI.BusinessLogicLayer.AuthBL::CreateAuthResponse(FormBuilderAPI.Model.SQLModel.User)": {
+          "Lines": {
+            "120": 4,
+            "121": 4,
+            "122": 4,
+            "124": 4,
+            "125": 4,
+            "126": 4,
+            "127": 4,
+            "128": 4,
+            "129": 4,
+            "130": 4,
+            "131": 4,
+            "132": 4
+          },
+          "Branches": []
+        },
+        "System.String FormBuilderAPI.BusinessLogicLayer.AuthBL::GenerateToken(FormBuilderAPI.Model.SQLModel.User)": {
+          "Lines": {
+            "135": 4,
+            "136": 4,
+            "137": 4,
+            "138": 4,
+            "139": 4,
+            "140": 4,
+            "141": 4
+          },
+          "Branches": []
+        },
+        "System.DateTime FormBuilderAPI.BusinessLogicLayer.AuthBL::CalculateTokenExpiration()": {
+          "Lines": {
+            "144": 4,
+            "145": 4,
+            "146": 4
+          },
+          "Branches": []
+        },
+        "System.Void FormBuilderAPI.BusinessLogicLayer.AuthBL::.ctor(FormBuilderAPI.Repository.IUserRepository,Microsoft.Extensions.Configuration.IConfiguration)": {
+          "Lines": {
+            "20": 15,
+            "21": 15,
+            "22": 15,
+            "23": 15,
+            "24": 15,
+            "25": 15
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\BusinessLogic\\FormBL.cs": {
+      "FormBuilderAPI.BusinessLogicLayer.FormBL": {
+        "FormBuilderAPI.Model.MongoModel.FormLayout FormBuilderAPI.BusinessLogicLayer.FormBL::MapDtoToLayout(FormBuilderAPI.DTOs.FormLayoutDTO)": {
+          "Lines": {
+            "116": 2,
+            "117": 2,
+            "118": 2,
+            "119": 2,
+            "120": 2,
+            "121": 2,
+            "122": 2,
+            "123": 2,
+            "124": 2,
+            "125": 2,
+            "126": 2,
+            "127": 2,
+            "128": 2,
+            "129": 2,
+            "130": 2,
+            "131": 2,
+            "132": 2,
+            "133": 2,
+            "134": 2,
+            "135": 2,
+            "136": 2,
+            "137": 2,
+            "138": 2,
+            "139": 2,
+            "140": 2,
+            "141": 2
+          },
+          "Branches": [
+            {
+              "Line": 117,
+              "Offset": 62,
+              "EndOffset": 64,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 117,
+              "Offset": 62,
+              "EndOffset": 68,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 117,
+              "Offset": 110,
+              "EndOffset": 112,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 0
+            },
+            {
+              "Line": 117,
+              "Offset": 110,
+              "EndOffset": 118,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            }
+          ]
+        },
+        "System.Void FormBuilderAPI.BusinessLogicLayer.FormBL::.ctor(FormBuilderAPI.Repository.IFormRepository)": {
+          "Lines": {
+            "18": 24,
+            "19": 24,
+            "20": 24,
+            "21": 24
+          },
+          "Branches": []
+        }
+      }
+    },
+    "C:\\Users\\santhosh.d_disprz\\Documents\\FormBuilderAPI\\FormBuilderAPI\\BusinessLogic\\ResponseBL.cs": {
+      "FormBuilderAPI.BusinessLogicLayer.ResponseBL": {
+        "System.Collections.Generic.List`1<FormBuilderAPI.Model.SQLModel.FormResponseAnswer> FormBuilderAPI.BusinessLogicLayer.ResponseBL::ProcessNonFileAnswers(FormBuilderAPI.DTOs.ResponseDTO,FormBuilderAPI.Model.MongoModel.Form)": {
+          "Lines": {
+            "164": 17,
+            "165": 17,
+            "166": 17,
+            "167": 17,
+            "168": 17,
+            "169": 17,
+            "170": 17,
+            "171": 17,
+            "172": 17,
+            "173": 17,
+            "174": 17,
+            "175": 17,
+            "176": 17,
+            "177": 17,
+            "178": 17,
+            "179": 17,
+            "180": 17,
+            "181": 17,
+            "182": 17,
+            "183": 17,
+            "184": 17,
+            "185": 17,
+            "186": 17,
+            "187": 17,
+            "188": 17,
+            "189": 17
+          },
+          "Branches": [
+            {
+              "Line": 165,
+              "Offset": 28,
+              "EndOffset": 30,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 165,
+              "Offset": 28,
+              "EndOffset": 34,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 16
+            },
+            {
+              "Line": 165,
+              "Offset": 74,
+              "EndOffset": 76,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 165,
+              "Offset": 74,
+              "EndOffset": 82,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 17
+            }
+          ]
+        },
+        "FormBuilderAPI.Model.SQLModel.FormResponseAnswer FormBuilderAPI.BusinessLogicLayer.ResponseBL::ProcessDropdownAnswer(FormBuilderAPI.DTOs.ResponseAnswerDTO,FormBuilderAPI.Model.MongoModel.FormField)": {
+          "Lines": {
+            "192": 4,
+            "195": 4,
+            "196": 1,
+            "197": 1,
+            "198": 1,
+            "199": 1,
+            "200": 1,
+            "202": 1,
+            "203": 1,
+            "204": 1,
+            "205": 1,
+            "206": 1,
+            "208": 3,
+            "209": 3,
+            "210": 3,
+            "211": 3,
+            "212": 3,
+            "213": 3,
+            "214": 3,
+            "216": 4,
+            "217": 4,
+            "218": 4,
+            "219": 4,
+            "220": 4,
+            "221": 4
+          },
+          "Branches": [
+            {
+              "Line": 195,
+              "Offset": 9,
+              "EndOffset": 14,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 197,
+              "Offset": 29,
+              "EndOffset": 31,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 0
+            },
+            {
+              "Line": 197,
+              "Offset": 29,
+              "EndOffset": 35,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 1
+            },
+            {
+              "Line": 197,
+              "Offset": 85,
+              "EndOffset": 87,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 0
+            },
+            {
+              "Line": 197,
+              "Offset": 85,
+              "EndOffset": 93,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 1
+            },
+            {
+              "Line": 195,
+              "Offset": 9,
+              "EndOffset": 166,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 3
+            },
+            {
+              "Line": 209,
+              "Offset": 181,
+              "EndOffset": 183,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 0
+            },
+            {
+              "Line": 209,
+              "Offset": 181,
+              "EndOffset": 187,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 3
+            },
+            {
+              "Line": 209,
+              "Offset": 193,
+              "EndOffset": 195,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 0
+            },
+            {
+              "Line": 209,
+              "Offset": 193,
+              "EndOffset": 201,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 3
+            }
+          ]
+        },
+        "System.Void FormBuilderAPI.BusinessLogicLayer.ResponseBL::ValidateFile(FormBuilderAPI.DTOs.ResponseFileUploadDTO)": {
+          "Lines": {
+            "254": 11,
+            "256": 11,
+            "257": 1,
+            "260": 10,
+            "261": 10,
+            "262": 1,
+            "263": 9
+          },
+          "Branches": [
+            {
+              "Line": 256,
+              "Offset": 17,
+              "EndOffset": 19,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 256,
+              "Offset": 17,
+              "EndOffset": 46,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 10
+            },
+            {
+              "Line": 260,
+              "Offset": 66,
+              "EndOffset": 68,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 0
+            },
+            {
+              "Line": 260,
+              "Offset": 66,
+              "EndOffset": 72,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 10
+            },
+            {
+              "Line": 261,
+              "Offset": 79,
+              "EndOffset": 81,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 10
+            },
+            {
+              "Line": 261,
+              "Offset": 79,
+              "EndOffset": 97,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 0
+            },
+            {
+              "Line": 261,
+              "Offset": 100,
+              "EndOffset": 102,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 1
+            },
+            {
+              "Line": 261,
+              "Offset": 100,
+              "EndOffset": 141,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 9
+            }
+          ]
+        },
+        "System.Collections.Generic.List`1<System.Object> FormBuilderAPI.BusinessLogicLayer.ResponseBL::ApplySearchFilter(System.Collections.Generic.List`1<System.Object>,System.String)": {
+          "Lines": {
+            "365": 2,
+            "366": 2,
+            "367": 2,
+            "368": 2,
+            "369": 2,
+            "370": 2,
+            "371": 2,
+            "372": 2,
+            "373": 2,
+            "374": 2,
+            "375": 2,
+            "376": 2,
+            "377": 2,
+            "378": 2
+          },
+          "Branches": []
+        },
+        "System.Collections.Generic.List`1<FormBuilderAPI.DTOs.ResponseDetailDTO> FormBuilderAPI.BusinessLogicLayer.ResponseBL::ApplyUserResponseSearchFilter(System.Collections.Generic.List`1<FormBuilderAPI.DTOs.ResponseDetailDTO>,System.String)": {
+          "Lines": {
+            "381": 2,
+            "382": 2,
+            "383": 2,
+            "384": 2,
+            "385": 2,
+            "386": 2,
+            "387": 2,
+            "388": 2,
+            "389": 2
+          },
+          "Branches": []
+        },
+        "System.Object FormBuilderAPI.BusinessLogicLayer.ResponseBL::ApplyPagination(System.Collections.Generic.List`1<System.Object>,System.Int32,System.Int32)": {
+          "Lines": {
+            "392": 6,
+            "393": 6,
+            "394": 6,
+            "396": 6,
+            "397": 6,
+            "398": 6,
+            "399": 6,
+            "401": 6,
+            "402": 6,
+            "403": 6,
+            "404": 6,
+            "405": 6,
+            "406": 6,
+            "407": 6,
+            "408": 6,
+            "409": 6
+          },
+          "Branches": []
+        },
+        "System.Object FormBuilderAPI.BusinessLogicLayer.ResponseBL::ApplyUserResponsePagination(System.Collections.Generic.List`1<FormBuilderAPI.DTOs.ResponseDetailDTO>,System.Int32,System.Int32)": {
+          "Lines": {
+            "412": 6,
+            "413": 6,
+            "414": 6,
+            "415": 6,
+            "416": 6,
+            "417": 6,
+            "419": 6,
+            "420": 6,
+            "421": 6,
+            "422": 6,
+            "423": 6,
+            "424": 6,
+            "425": 6,
+            "426": 6
+          },
+          "Branches": []
+        },
+        "System.Object FormBuilderAPI.BusinessLogicLayer.ResponseBL::CreateEmptyPagedResult(System.Int32,System.Int32)": {
+          "Lines": {
+            "429": 2,
+            "430": 2,
+            "431": 2,
+            "432": 2,
+            "433": 2,
+            "434": 2,
+            "435": 2,
+            "436": 2,
+            "437": 2
+          },
+          "Branches": []
+        },
+        "System.Void FormBuilderAPI.BusinessLogicLayer.ResponseBL::.ctor(FormBuilderAPI.Repository.IResponseRepository,FormBuilderAPI.BusinessLogicLayer.IFormBL)": {
+          "Lines": {
+            "20": 36,
+            "21": 36,
+            "22": 36,
+            "23": 36,
+            "24": 36
+          },
+          "Branches": []
+        },
+        "System.Void FormBuilderAPI.BusinessLogicLayer.ResponseBL::.cctor()": {
+          "Lines": {
+            "18": 1
+          },
+          "Branches": []
+        }
+      }
+    }
+  }
+}

@@ -10,7 +10,5 @@ namespace FormBuilderAPI.BusinessLogicLayer
         Task<AuthResponseDTO?> RegisterAsync(AuthDTO dto);
         Task<bool> ValidateTokenAsync(string token);
         Task<User?> GetUserByUsernameAsync(string username);
-        
-
     }
 }

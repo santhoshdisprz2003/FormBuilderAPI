@@ -1,0 +1,521 @@
+openapi: 3.0.1
+info:
+  title: Form Builder API
+  description: 'Dynamic Form Builder backend using .NET, SQL, and MongoDB'
+  version: v1
+paths:
+  '/api/admin/forms/{formId}/responses':
+    get:
+      tags:
+        - Admin
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 6
+      responses:
+        '200':
+          description: OK
+  /api/login:
+    post:
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+      responses:
+        '200':
+          description: OK
+  /api/register:
+    post:
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AuthDTO'
+      responses:
+        '200':
+          description: OK
+  /api/forms:
+    get:
+      tags:
+        - Form
+      parameters:
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 9
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{id}':
+    get:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+  /api/forms/formconfig:
+    post:
+      tags:
+        - Form
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+      responses:
+        '200':
+          description: OK
+  '/api/forms/formconfig/{id}':
+    put:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormConfigDTO'
+      responses:
+        '200':
+          description: OK
+  '/api/forms/formlayout/{formId}':
+    post:
+      tags:
+        - Form
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+      responses:
+        '200':
+          description: OK
+    put:
+      tags:
+        - Form
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/FormLayoutDTO'
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{id}/publish':
+    put:
+      tags:
+        - Form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+  '/api/forms/{formId}/responses':
+    post:
+      tags:
+        - Response
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ResponseDTO'
+      responses:
+        '200':
+          description: OK
+    get:
+      tags:
+        - Response
+      parameters:
+        - name: formId
+          in: path
+          required: true
+          schema:
+            maxLength: 24
+            minLength: 24
+            type: string
+      responses:
+        '200':
+          description: OK
+  /api/responses/my-responses:
+    get:
+      tags:
+        - Response
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 6
+      responses:
+        '200':
+          description: OK
+  '/api/responses/download-file/{responseId}/{fileId}':
+    get:
+      tags:
+        - Response
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    AuthDTO:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          minLength: 1
+          type: string
+        password:
+          minLength: 1
+          type: string
+        role:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FieldOptionDTO:
+      type: object
+      properties:
+        optionId:
+          type: string
+          nullable: true
+        value:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FormConfigDTO:
+      required:
+        - title
+      type: object
+      properties:
+        title:
+          minLength: 1
+          type: string
+        description:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FormFieldDTO:
+      required:
+        - label
+        - type
+      type: object
+      properties:
+        questionId:
+          type: string
+          nullable: true
+        label:
+          minLength: 1
+          type: string
+        type:
+          minLength: 1
+          type: string
+        descriptionEnabled:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        singleChoice:
+          type: boolean
+        multipleChoice:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldOptionDTO'
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        required:
+          type: boolean
+        order:
+          type: integer
+          format: int32
+      additionalProperties: false
+    FormHeaderCardDTO:
+      required:
+        - title
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        title:
+          minLength: 1
+          type: string
+        description:
+          type: string
+          nullable: true
+      additionalProperties: false
+    FormLayoutDTO:
+      required:
+        - headerCard
+      type: object
+      properties:
+        headerCard:
+          $ref: '#/components/schemas/FormHeaderCardDTO'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormFieldDTO'
+          nullable: true
+      additionalProperties: false
+    ResponseAnswerDTO:
+      required:
+        - questionId
+      type: object
+      properties:
+        answerId:
+          type: integer
+          format: int32
+          nullable: true
+        questionId:
+          minLength: 1
+          type: string
+        answerText:
+          type: string
+          nullable: true
+        file:
+          $ref: '#/components/schemas/ResponseFileUploadDTO'
+      additionalProperties: false
+    ResponseDTO:
+      required:
+        - answers
+        - formId
+      type: object
+      properties:
+        responseId:
+          type: integer
+          format: int32
+          nullable: true
+        formId:
+          minLength: 1
+          type: string
+        submittedBy:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponseAnswerDTO'
+      additionalProperties: false
+    ResponseFileUploadDTO:
+      required:
+        - base64Content
+        - fileName
+        - fileType
+        - questionId
+      type: object
+      properties:
+        questionId:
+          minLength: 1
+          type: string
+        fileName:
+          minLength: 1
+          type: string
+        fileType:
+          minLength: 1
+          type: string
+        fileMaxSize:
+          type: integer
+          format: int64
+        base64Content:
+          minLength: 1
+          type: string
+      additionalProperties: false
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      description: 'Enter ''Bearer {your token}'''
+      name: Authorization
+      in: header
+security:
+  - Bearer: [ ]

@@ -1,0 +1,117 @@
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using FormBuilderAPI.DTOs;
+using FormBuilderAPI.BusinessLogicLayer;
+
+namespace FormBuilderAPI.Controllers
+{
+    [ApiController]
+    [Route("api/responses")]
+    public class ResponseController : ControllerBase
+    {
+        private readonly IResponseBL _responseBL;
+
+        public ResponseController(IResponseBL responseBL)
+        {
+            _responseBL = responseBL ?? throw new ArgumentNullException(nameof(responseBL));
+        }
+
+
+
+        [HttpPost("/api/forms/{formId:length(24)}/responses")]
+        [Authorize(Roles = "Learner")]
+        public async Task<IActionResult> SubmitResponse(string formId, [FromBody] ResponseDTO responseDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized();
+
+            responseDto.FormId = formId;
+            responseDto.SubmittedBy = userId;
+            responseDto.SubmittedAt = DateTime.UtcNow;
+
+            var createdResponseId = await _responseBL.SubmitResponseAsync(responseDto);
+
+            return Created($"/api/forms/{formId}/responses", new { id = createdResponseId });
+        }
+
+
+        [HttpGet("/api/forms/{formId:length(24)}/responses")]
+        [Authorize(Roles = "Learner")]
+        public async Task<IActionResult> GetResponsesForForm(string formId)
+        {
+            // 1️⃣ Get the logged-in user's ID from JWT token claims
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(new { message = "User ID not found in token." });
+
+            // 2️⃣ Fetch only this user's responses for the form
+
+            var responses = await _responseBL.GetResponsesForUserAsync(formId, userId);
+
+            // 3️⃣ If the user hasn’t submitted any response, show empty or 404
+            if (responses == null || !responses.Any())
+                return NotFound(new { message = "No responses found for this user." });
+
+            // 4️⃣ Return OK with their responses
+            return Ok(responses);
+        }
+
+        [HttpGet("my-responses")]
+        [Authorize(Roles = "Learner")]
+        public async Task<IActionResult> GetAllResponsesByLearner(
+    [FromQuery] string? search,
+    [FromQuery] int pageNumber = 1,
+    [FromQuery] int pageSize = 6)
+        {
+            // 1️⃣ Get logged-in user ID from JWT claims
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(new { message = "User ID not found in token." });
+
+            // 2️⃣ Fetch all responses submitted by this user (with optional search + pagination)
+            var pagedResult = await _responseBL.GetAllResponsesByUserAsync(userId, search, pageNumber, pageSize);
+
+            // 3️⃣ If no responses found
+            if (pagedResult == null)
+                return NotFound(new { message = "No responses found for this user." });
+
+            // 4️⃣ Return paginated + filtered responses
+            return Ok(pagedResult);
+        }
+
+
+
+
+
+
+        [HttpGet("download-file/{responseId}/{fileId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DownloadFile(int responseId, int fileId)
+        {
+            // Fetch the file using responseId and fileId
+            var file = await _responseBL.GetFileByResponseIdAndFileIdAsync(responseId, fileId);
+
+            if (file == null)
+                return NotFound(new { message = "File not found for this response." });
+
+            // Convert Base64 back to bytes
+            var fileBytes = Convert.FromBase64String(file.Base64Content);
+
+            // Return as downloadable file
+            return File(fileBytes, file.FileType, file.FileName);
+        }
+
+
+    }
+}
